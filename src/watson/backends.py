@@ -24,9 +24,15 @@ class SearchBackend(object):
         raise NotImplementedError
         
     @abstractmethod
-    def filter_search(self, queryset, text):
+    def do_search(self, queryset, text):
         """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
+        
+    def search(self, text):
+        """Performs a search using the given text, returning a queryset of SearchEntry."""
+        queryset = SearchEntry.objects.all()
+        queryset = self.do_search(queryset, text)
+        return queryset
         
         
 class PostgresSearchBackend(SearchBackend):
@@ -50,7 +56,7 @@ class DumbSearchBackend(SearchBackend):
         """Just create a dumb text column."""
         db.add_column(SearchEntry._meta.db_table, "search_text", models.TextField(default=""), keep_default=False)
         
-    def filter_search(self, queryset, text):
+    def do_search(self, queryset, text):
         """Performs the dumb search."""
         return queryset.filter(search_text__icontains=text)
         
