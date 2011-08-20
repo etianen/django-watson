@@ -4,6 +4,7 @@ import cPickle
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 
 
 def has_int_pk(model):
@@ -33,7 +34,7 @@ class SearchEntry(models.Model):
         db_index = True,
     )
     
-    search_text = models.TextField()
+    object = generic.GenericForeignKey()
     
     meta_encoded = models.TextField()
     

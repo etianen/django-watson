@@ -14,6 +14,4 @@ class Command(NoArgsCommand):
     def handle_noargs(self, **options):
         """Runs the management command."""
         backend = get_backend()
-        install_sql = backend.get_install_sql()
-        if install_sql:
-            connection.cursor.execute(install_sql)
+        install_sql = backend.do_install()

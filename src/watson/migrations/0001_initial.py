@@ -15,7 +15,6 @@ class Migration(SchemaMigration):
             ('content_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'])),
             ('object_id', self.gf('django.db.models.fields.TextField')()),
             ('object_id_int', self.gf('django.db.models.fields.IntegerField')(db_index=True, null=True, blank=True)),
-            ('search_text', self.gf('django.db.models.fields.TextField')()),
             ('meta_encoded', self.gf('django.db.models.fields.TextField')()),
         ))
         db.send_create_signal('watson', ['SearchEntry'])

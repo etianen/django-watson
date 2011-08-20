@@ -5,6 +5,11 @@ from abc import ABCMeta, abstractmethod
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
+from django.db import models
+
+from south.db import db
+
+from watson.models import SearchEntry
 
 
 class SearchBackend(object):
@@ -14,8 +19,13 @@ class SearchBackend(object):
     __metaclass__ = ABCMeta
     
     @abstractmethod
-    def get_install_sql(self):
+    def do_install(self):
         """Generates the SQL needed to install django-watson."""
+        raise NotImplementedError
+        
+    @abstractmethod
+    def filter_search(self, queryset, text):
+        """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
         
         
@@ -23,9 +33,9 @@ class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
     
-    def get_install_sql(self):
+    def do_install(self):
         """Generates the PostgreSQL specific SQL code to install django-watson."""
-        return ""
+        
         
         
 class DumbSearchBackend(SearchBackend):
@@ -36,9 +46,13 @@ class DumbSearchBackend(SearchBackend):
     This is fine for debugging locally, but rubbish for production.
     """
     
-    def get_install_sql(self):
-        """There's no installation SQL for this backend!"""
-        return ""
+    def do_install(self):
+        """Just create a dumb text column."""
+        db.add_column(SearchEntry._meta.db_table, "search_text", models.TextField(default=""), keep_default=False)
+        
+    def filter_search(self, queryset, text):
+        """Performs the dumb search."""
+        return queryset.filter(search_text__icontains=text)
         
         
 class AdaptiveSearchBackend(SearchBackend):
@@ -50,6 +64,7 @@ class AdaptiveSearchBackend(SearchBackend):
     
     def __new__(cls):
         """Guess the correct search backend and initialize it."""
+        return DumbSearchBackend()  # TODO: remove
         database_engine = settings.DATABASES["default"]["ENGINE"]
         if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
             return PostgresSearchBackend()
