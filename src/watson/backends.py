@@ -62,7 +62,7 @@ class PostgresSearchBackend(SearchBackend):
             u" ".join(weighted_search_text[2:3]),
             u" ".join(weighted_search_text[3:]),
         ]
-        if search_entry.pk is None:
+        if search_entry.id is None:
             # Perform a raw insert.
             sql_str = u"""
                 INSERT INTO
@@ -100,7 +100,8 @@ class PostgresSearchBackend(SearchBackend):
                         setweight(to_tsvector(%s), 'B') ||
                         setweight(to_tsvector(%s), 'C') ||
                         setweight(to_tsvector(%s), 'D')
-                    ),
+                    )
+                WHERE
                     "id" = %s
                 """
             sql_params.append(search_entry.id)
@@ -135,9 +136,9 @@ class DumbSearchBackend(SearchBackend):
         
     def do_search(self, queryset, search_text):
         """Performs the dumb search."""
-        words = search_text.split()
+        words = search_text.lower().split()
         sql_str = u" OR ".join(
-            u"({search_text} ILIKE %s)".format(
+            u"({search_text} LIKE %s)".format(
                 search_text = connection.ops.quote_name("search_text"),
             )
             for _ in words
@@ -154,7 +155,7 @@ class DumbSearchBackend(SearchBackend):
     def save_search_entry(self, obj, search_entry, weighted_search_text):
         """Saves the search entry."""
         # Consolidate the search entry data.
-        search_text = u" ".join(weighted_search_text)
+        search_text = u" ".join(weighted_search_text).lower()
         # Hijack the save with raw SQL!
         sql_params = [
             search_entry.object_id,
@@ -187,7 +188,8 @@ class DumbSearchBackend(SearchBackend):
                     {object_id_int} = %s,
                     {content_type_id} = %s,
                     {meta_encoded} = %s,
-                    {search_text} = %s,
+                    {search_text} = %s
+                WHERE
                     {id} = %s
                 """
             sql_params.append(search_entry.id)

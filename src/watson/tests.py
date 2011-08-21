@@ -83,17 +83,28 @@ class SearchTest(TestCase):
             content = "content model2 22",
             description = "description model2 22",
         )
-        
+    
     def testMultiTableSearch(self):
         backend = get_backend()
         # Test a search that should get all models.
-        self.assertEqual(backend.search("title content description").count(), 4)
+        self.assertEqual(backend.search("tItle Content Description").count(), 4)
         # Test a search that should get two models.
-        self.assertEqual(backend.search("model1").count(), 2)
+        self.assertEqual(backend.search("mOdel1").count(), 2)
         # Test a search that should get one model.
         exact_search = backend.search("11")
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+    
+    def testUpdateSearchIndex(self):
+        backend = get_backend()
+        # Update a model and make sure that the search results match.
+        with search_context_manager.context():
+            self.test11.title = "foo"
+            self.test11.save()
+        # Test a search that should get one model.
+        exact_search = backend.search("foo")
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].meta["title"], "foo")
         
     def tearDown(self):
         unregister(TestModel1)

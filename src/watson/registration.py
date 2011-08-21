@@ -207,34 +207,37 @@ class SearchContextManager(local):
             )
         return object_id_int, search_entries
     
+    def update_obj_index(self, obj):
+        """Updates the search index for the given obj."""
+        model = obj.__class__
+        adaptor = get_adaptor(model)
+        content_type = ContentType.objects.get_for_model(model)
+        object_id = unicode(obj.pk)
+        # Create the search data.
+        meta = adaptor.get_meta(obj)
+        weighted_search_text = adaptor.get_weighted_search_text(obj)
+        # Try to get the existing search entry.
+        object_id_int, search_entries = self._get_entries_for_obj(obj)
+        try:
+            search_entry = search_entries.get()
+        except SearchEntry.DoesNotExist:
+            search_entry = SearchEntry(
+                content_type = content_type,
+                object_id = object_id,
+                object_id_int = object_id_int,
+            )
+        # Store search meta.
+        search_entry.meta = meta
+        # Pass on the entry for final processing to the search backend.
+        get_backend().save_search_entry(obj, search_entry, weighted_search_text)
+    
     def end(self):
         """Ends a level in the search context."""
         self._assert_active()
-        backend = get_backend()
         # Save all the models.
         objs = self._stack.pop()
         for obj in objs:
-            model = obj.__class__
-            adaptor = get_adaptor(model)
-            content_type = ContentType.objects.get_for_model(model)
-            object_id = unicode(obj.pk)
-            # Create the search data.
-            meta = adaptor.get_meta(obj)
-            weighted_search_text = adaptor.get_weighted_search_text(obj)
-            # Try to get the existing search entry.
-            object_id_int, search_entries = self._get_entries_for_obj(obj)
-            try:
-                search_entry = search_entries.get()
-            except SearchEntry.DoesNotExist:
-                search_entry = SearchEntry(
-                    content_type = content_type,
-                    object_id = object_id,
-                    object_id_int = object_id_int,
-                )
-            # Store search meta.
-            search_entry.meta = meta
-            # Pass on the entry for final processing to the search backend.
-            backend.save_search_entry(obj, search_entry, weighted_search_text)
+            self.update_obj_index(obj)
     
     # Context management.
     
