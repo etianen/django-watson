@@ -1,6 +1,7 @@
 """Search backends used by django-watson."""
 
 from abc import ABCMeta, abstractmethod
+import operator
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -65,6 +66,9 @@ class SearchBackend(object):
                         content_type = content_type,
                         object_id_int__in = [unicode(pk) for pk in live_pks],
                     )
+        if live_subqueries:
+            live_subquery = reduce(operator.or_, live_subqueries)
+            queryset = queryset.filter(live_subquery)
         # Perform the backend-specific full text match.
         queryset = self.do_search(queryset, search_text)
         return queryset
@@ -169,11 +173,13 @@ class DumbSearchBackend(SearchBackend):
     def do_search(self, queryset, search_text):
         """Performs the dumb search."""
         words = search_text.lower().split()
-        sql_str = u" OR ".join(
-            u"({search_text} LIKE %s)".format(
-                search_text = connection.ops.quote_name("search_text"),
+        sql_str = "({sql})".format(
+            sql = u" OR ".join(
+                u"({search_text} LIKE %s)".format(
+                    search_text = connection.ops.quote_name("search_text"),
+                )
+                for _ in words
             )
-            for _ in words
         )
         sql_params = [
             "%" + connection.ops.prep_for_like_query(word) + "%"
