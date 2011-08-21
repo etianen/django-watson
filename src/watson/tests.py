@@ -32,11 +32,23 @@ class TestModelBase(models.Model):
 class TestModel1(TestModelBase):
 
     pass
+
+
+str_pk_gen = 0;
+
+def get_str_pk():
+    global str_pk_gen
+    str_pk_gen += 1;
+    return str(str_pk_gen)
     
     
 class TestModel2(TestModelBase):
 
-    pass
+    id = models.CharField(
+        primary_key = True,
+        max_length = 100,
+        default = get_str_pk
+    )
 
 
 class RegistrationText(TestCase):
