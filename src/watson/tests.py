@@ -5,6 +5,7 @@ from django.test import TestCase
 from django.core.management import call_command
 
 from watson.registration import register, unregister, is_registered, get_registered_models, get_adapter, RegistrationError, SearchAdapter, search_context_manager, get_backend
+from watson.models import SearchEntry
 
 
 class TestModelBase(models.Model):
@@ -49,6 +50,11 @@ class TestModel2(TestModelBase):
         max_length = 100,
         default = get_str_pk
     )
+    
+    
+class TestModel2SearchAdapter(SearchAdapter):
+
+    exclude = ("id",)
 
 
 class RegistrationText(TestCase):
@@ -70,12 +76,14 @@ class RegistrationText(TestCase):
         
 class SearchTest(TestCase):
     
-    search_adaptor = SearchAdapter
+    search_adapter_1 = SearchAdapter
+    
+    search_adapter_2 = TestModel2SearchAdapter
     
     @search_context_manager.update_index
     def setUp(self):
-        register(TestModel1, self.search_adaptor)
-        register(TestModel2, self.search_adaptor)
+        register(TestModel1, self.search_adapter_1)
+        register(TestModel2, self.search_adapter_2)
         # Create some test models.
         self.test11 = TestModel1.objects.create(
             title = "title model1 11",
@@ -141,7 +149,7 @@ class SearchTest(TestCase):
         self.assertEqual(exact_search[0].meta["title"], "title model1 11")
         # Test a search that should get no models.
         self.assertEqual(backend.search("11", exclude=(TestModel1,)).count(), 0)
-    
+            
     def testRebuildWatsonCommand(self):
         backend = get_backend()
         # This update won't take affect, because no search context is active.
@@ -164,13 +172,22 @@ class SearchTest(TestCase):
         del self.test12
         del self.test21
         del self.test22
+        # Delete the search index.
+        SearchEntry.objects.all().delete()
 
 
 class LiveFilterSearchAdapter(SearchAdapter):
+
+    live_filter = True
+    
+    
+class LiveFilterModel2SearchAdapter(TestModel2SearchAdapter):
 
     live_filter = True
         
         
 class LiveFilterSearchTest(SearchTest):
 
-    search_adaptor = LiveFilterSearchAdapter
+    search_adapter_1 = LiveFilterSearchAdapter
+    
+    search_adapter_2 = LiveFilterModel2SearchAdapter
