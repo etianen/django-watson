@@ -3,7 +3,7 @@
 from django.core.management.base import NoArgsCommand
 from django.db import connection, transaction
 
-from watson.backends import get_backend
+from watson.registration import get_backend
 
 
 class Command(NoArgsCommand):

@@ -4,14 +4,15 @@ from threading import local
 from contextlib import contextmanager
 from functools import wraps
 
+from django.conf import settings
 from django.core.signals import request_started, request_finished
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
+from django.utils.importlib import import_module
 
 from watson.models import SearchEntry, has_int_pk
-from watson.backends import get_backend
 
 
 class SearchAdaptor(object):
@@ -287,3 +288,30 @@ class SearchContextManager(local):
             
 # The shared, thread-safe search context manager.
 search_context_manager = SearchContextManager()
+
+
+# The cache for the initialized backend.
+_backend_cache = None
+
+
+def get_backend():
+    """Initializes and returns the search backend."""
+    global _backend_cache
+    # Try to use the cached backend.
+    if _backend_cache is not None:
+        return _backend_cache
+    # Load the backend class.
+    backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
+    backend_module_name, backend_cls_name = backend_name.rsplit(".", 1)
+    backend_module = import_module(backend_module_name)
+    try:
+        backend_cls = getattr(backend_module, backend_cls_name)
+    except AttributeError:
+        raise ImproperlyConfigured("Could not find a class named {backend_module_name!r} in {backend_cls_name!r}".format(
+            backend_module_name = backend_module_name,
+            backend_cls_name = backend_cls_name,
+        ))
+    # Initialize the backend.
+    backend = backend_cls()
+    _backend_cache = backend
+    return backend

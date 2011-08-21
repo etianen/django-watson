@@ -3,13 +3,13 @@
 from abc import ABCMeta, abstractmethod
 
 from django.conf import settings
-from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Q
 
 from watson.models import SearchEntry
+from watson.registration import get_registered_models
 
 
 class SearchBackend(object):
@@ -37,18 +37,15 @@ class SearchBackend(object):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         queryset = SearchEntry.objects.all()
         # Add in a model limiter.
-        if models:
+        allowed_models = models or get_registered_models()
+        if exclude:
+            allowed_models = [model for model in allowed_models if not model in exclude]
+        if models or exclude:
             content_types = [
                 ContentType.objects.get_for_model(model)
-                for model in models
+                for model in allowed_models
             ]
             queryset = queryset.filter(content_type__in=content_types)
-        if exclude:
-            content_types = [
-                ContentType.objects.get_for_model(model)
-                for model in exclude
-            ]
-            queryset = queryset.exclude(content_type__in=content_types)
         # Perform the backend-specific full text match.
         queryset = self.do_search(queryset, search_text)
         return queryset
@@ -232,30 +229,3 @@ class AdaptiveSearchBackend(SearchBackend):
             return PostgresSearchBackend()
         else:
             return DumbSearchBackend()
-            
-
-# The cache for the initialized backend.
-_backend_cache = None
-
-
-def get_backend():
-    """Initializes and returns the search backend."""
-    global _backend_cache
-    # Try to use the cached backend.
-    if _backend_cache is not None:
-        return _backend_cache
-    # Load the backend class.
-    backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
-    backend_module_name, backend_cls_name = backend_name.rsplit(".", 1)
-    backend_module = import_module(backend_module_name)
-    try:
-        backend_cls = getattr(backend_module, backend_cls_name)
-    except AttributeError:
-        raise ImproperlyConfigured("Could not find a class named {backend_module_name!r} in {backend_cls_name!r}".format(
-            backend_module_name = backend_module_name,
-            backend_cls_name = backend_cls_name,
-        ))
-    # Initialize the backend.
-    backend = backend_cls()
-    _backend_cache = backend
-    return backend

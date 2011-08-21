@@ -6,8 +6,7 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
-from watson.backends import get_backend
-from watson.registration import SearchAdaptor, register, unregister, is_registered, get_registered_models, search_context_manager
+from watson.registration import SearchAdaptor, register, unregister, is_registered, get_registered_models, search_context_manager, get_backend
 
 
 # The main search method.

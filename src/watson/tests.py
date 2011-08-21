@@ -3,8 +3,7 @@
 from django.db import models
 from django.test import TestCase
 
-from watson.backends import get_backend
-from watson.registration import register, unregister, is_registered, get_registered_models, get_adaptor, RegistrationError, SearchAdaptor, search_context_manager
+from watson.registration import register, unregister, is_registered, get_registered_models, get_adaptor, RegistrationError, SearchAdaptor, search_context_manager, get_backend
 
 
 class TestModelBase(models.Model):
