@@ -5,7 +5,9 @@ from abc import ABCMeta, abstractmethod
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
+from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
+from django.db.models import Q
 
 from watson.models import SearchEntry
 
@@ -31,9 +33,23 @@ class SearchBackend(object):
         """Saves the given search entry in the database."""
         raise NotImplementedError
         
-    def search(self, search_text):
+    def search(self, search_text, models=None, exclude=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         queryset = SearchEntry.objects.all()
+        # Add in a model limiter.
+        if models:
+            content_types = [
+                ContentType.objects.get_for_model(model)
+                for model in models
+            ]
+            queryset = queryset.filter(content_type__in=content_types)
+        if exclude:
+            content_types = [
+                ContentType.objects.get_for_model(model)
+                for model in exclude
+            ]
+            queryset = queryset.exclude(content_type__in=content_types)
+        # Perform the backend-specific full text match.
         queryset = self.do_search(queryset, search_text)
         return queryset
         

@@ -105,6 +105,28 @@ class SearchTest(TestCase):
         exact_search = backend.search("foo")
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].meta["title"], "foo")
+    
+    def testLimitedModelList(self):
+        backend = get_backend()
+        # Test a search that should get all models.
+        self.assertEqual(backend.search("tItle Content Description", models=(TestModel1,)).count(), 2)
+        # Test a search that should get one model.
+        exact_search = backend.search("11", models=(TestModel1,))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+        # Test a search that should get no models.
+        self.assertEqual(backend.search("11", models=(TestModel2,)).count(), 0)
+        
+    def testExcludedModelList(self):
+        backend = get_backend()
+        # Test a search that should get all models.
+        self.assertEqual(backend.search("tItle Content Description", exclude=(TestModel2,)).count(), 2)
+        # Test a search that should get one model.
+        exact_search = backend.search("11", exclude=(TestModel2,))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+        # Test a search that should get no models.
+        self.assertEqual(backend.search("11", exclude=(TestModel1,)).count(), 0)
         
     def tearDown(self):
         unregister(TestModel1)
