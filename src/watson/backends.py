@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 from django.conf import settings
 from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
-from django.db import models
+from django.db import models, connection
 
 from south.db import db
 
@@ -26,6 +26,11 @@ class SearchBackend(object):
     @abstractmethod
     def do_search(self, queryset, text):
         """Filters the given queryset according the the search logic for this backend."""
+        raise NotImplementedError
+    
+    @abstractmethod
+    def save_search_entry(self, obj, search_entry, weighted_search_text):
+        """Saves the given search entry in the database."""
         raise NotImplementedError
         
     def search(self, text):
@@ -59,6 +64,10 @@ class DumbSearchBackend(SearchBackend):
     def do_search(self, queryset, text):
         """Performs the dumb search."""
         return queryset.filter(search_text__icontains=text)
+        
+    def save_search_entry(self, obj, search_entry, weighted_search_text):
+        """Saves the search entry."""
+        search_text = u" ".join(weighted_search_text)
         
         
 class AdaptiveSearchBackend(SearchBackend):
