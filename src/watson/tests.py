@@ -2,6 +2,7 @@
 
 from django.db import models
 from django.test import TestCase
+from django.core.management import call_command
 
 from watson.registration import register, unregister, is_registered, get_registered_models, get_adapter, RegistrationError, SearchAdapter, search_context_manager, get_backend
 
@@ -138,6 +139,18 @@ class SearchTest(TestCase):
         self.assertEqual(exact_search[0].meta["title"], "title model1 11")
         # Test a search that should get no models.
         self.assertEqual(backend.search("11", exclude=(TestModel1,)).count(), 0)
+    
+    def testRebuildWatsonCommand(self):
+        backend = get_backend()
+        # This update won't take affect, because no search context is active.
+        self.test11.title = "foo"
+        self.test11.save()
+        # Test that no update has happened.
+        self.assertEqual(backend.search("foo").count(), 0)
+        # Run the rebuild command.
+        call_command("rebuildwatson")
+        # Test that the update is now applies.
+        self.assertEqual(backend.search("foo").count(), 1)
         
     def tearDown(self):
         unregister(TestModel1)

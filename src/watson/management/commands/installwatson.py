@@ -1,7 +1,7 @@
 """Creates the database indices needed by django-watson."""
 
 from django.core.management.base import NoArgsCommand
-from django.db import connection, transaction
+from django.db import transaction
 
 from watson.registration import get_backend
 
