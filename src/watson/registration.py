@@ -1,9 +1,12 @@
 """Adaptors for registering models with django-watson."""
 
 from threading import local
+from contextlib import contextmanager
+from functools import wraps
 
 from django.core.signals import request_started, request_finished
 from django.contrib.contenttypes.models import ContentType
+from django.db import models
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
 
@@ -60,7 +63,7 @@ class SearchAdaptor(object):
         else:
             field_names = self.fields
         # Exclude named fields.
-        if exclude:
+        if self.exclude:
             field_names = [field_name for field_name in field_names if field_name not in self.exclude]
         # Create the text.
         text_parts = []
@@ -74,11 +77,11 @@ class SearchAdaptor(object):
             # Store the value.
             text_parts.append(value)
         # Consolidate the text.
-        return u"".join(text_parts)
+        return u" ".join(text_parts)
         
     def get_weighted_search_text(self, obj):
         """Returns the weighted search text associated with the given obj."""
-        return (unicode(obj), self.get_search_text(),)
+        return (unicode(obj), self.get_search_text(obj),)
 
 
 class RegistrationError(Exception):
@@ -113,8 +116,8 @@ def register(model, adaptor_cls=SearchAdaptor):
     adaptor_obj = adaptor_cls(model)
     _registered_models[model] = adaptor_obj
     # Connect to the signalling framework.
-    post_save.connect(search_context.post_save_receiver, model)
-    pre_delete.connect(search_context.pre_delete_receiver, model)
+    post_save.connect(search_context_manager.post_save_receiver, model)
+    pre_delete.connect(search_context_manager.pre_delete_receiver, model)
     
     
 def unregister(model):
@@ -132,8 +135,8 @@ def unregister(model):
     # Perform the unregistration.
     del _registered_models[model]
     # Disconnect from the signalling framework.
-    post_save.disconnect(search_context.post_save_receiver, model)
-    pre_delete.connect(search_context.pre_delete_receiver, model)
+    post_save.disconnect(search_context_manager.post_save_receiver, model)
+    pre_delete.connect(search_context_manager.pre_delete_receiver, model)
         
         
 def get_registered_models():
@@ -157,9 +160,9 @@ class SearchContextError(Exception):
     """Something went wrong with the search context management."""
 
 
-class SearchContext(local):
+class SearchContextManager(local):
 
-    """A thread-local context used to manage saving search data."""
+    """A thread-local context manager used to manage saving search data."""
     
     def __init__(self):
         """Initializes the search context."""
@@ -183,6 +186,10 @@ class SearchContext(local):
     
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
+        model = obj.__class__
+        content_type = ContentType.objects.get_for_model(model)
+        object_id = unicode(obj.pk)
+        # Get the basic list of search entries.
         search_entries = SearchEntry.objects.filter(
             content_type = content_type,
         )
@@ -198,7 +205,7 @@ class SearchContext(local):
             search_entries = search_entries.filter(
                 object_id = object_id,
             )
-        return search_entries
+        return object_id_int, search_entries
     
     def end(self):
         """Ends a level in the search context."""
@@ -215,7 +222,7 @@ class SearchContext(local):
             meta = adaptor.get_meta(obj)
             weighted_search_text = adaptor.get_weighted_search_text(obj)
             # Try to get the existing search entry.
-            search_entries = self._get_entries_for_obj()
+            object_id_int, search_entries = self._get_entries_for_obj(obj)
             try:
                 search_entry = search_entries.get()
             except SearchEntry.DoesNotExist:
@@ -229,6 +236,25 @@ class SearchContext(local):
             # Pass on the entry for final processing to the search backend.
             backend.save_search_entry(obj, search_entry, weighted_search_text)
     
+    # Context management.
+    
+    @contextmanager
+    def context(self):
+        """Defines a search context for updating registered models."""
+        self.begin()
+        try:
+            yield
+        finally:
+            self.end()
+            
+    def update_index(self, func):
+        """Marks up a function that should be run in a search context."""
+        @wraps(func)
+        def do_update_index(*args, **kwargs):
+            with self.context():
+                return func(*args, **kwargs)
+        return do_update_index
+    
     # Signalling hooks.
             
     def post_save_receiver(self, instance, **kwargs):
@@ -238,7 +264,7 @@ class SearchContext(local):
             
     def pre_delete_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been deleted."""
-        search_entries = self._get_entries_for_obj()
+        _, search_entries = self._get_entries_for_obj(instance)
         search_entries.delete()
         
     def request_started_receiver(self, **kwargs):
@@ -251,10 +277,10 @@ class SearchContext(local):
         # Check for any hanging search contexts.
         if self.is_active():
             raise SearchContextError(
-                "Request finished with an open search context. All calls to search_context.begin() "
-                "should be balanced by a call to search_context.end()."
+                "Request finished with an open search context. All calls to search_context_manager.begin() "
+                "should be balanced by a call to search_context_manager.end()."
             )
         
             
-# The shared, thread-safe search context.
-search_context = SearchContext()
+# The shared, thread-safe search context manager.
+search_context_manager = SearchContextManager()

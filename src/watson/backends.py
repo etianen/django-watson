@@ -22,7 +22,7 @@ class SearchBackend(object):
         raise NotImplementedError
         
     @abstractmethod
-    def do_search(self, queryset, text):
+    def do_search(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
     
@@ -31,10 +31,10 @@ class SearchBackend(object):
         """Saves the given search entry in the database."""
         raise NotImplementedError
         
-    def search(self, text):
+    def search(self, search_text):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         queryset = SearchEntry.objects.all()
-        queryset = self.do_search(queryset, text)
+        queryset = self.do_search(queryset, search_text)
         return queryset
         
         
@@ -60,31 +60,70 @@ class DumbSearchBackend(SearchBackend):
         from south.db import db
         db.add_column(SearchEntry._meta.db_table, "search_text", models.TextField(default=""), keep_default=False)
         
-    def do_search(self, queryset, text):
+    def do_search(self, queryset, search_text):
         """Performs the dumb search."""
-        return queryset.filter(search_text__icontains=text)
+        words = search_text.split()
+        sql_str = u" OR ".join(
+            u"({search_text} ILIKE %s)".format(
+                search_text = connection.ops.quote_name("search_text"),
+            )
+            for _ in words
+        )
+        sql_params = [
+            "%" + connection.ops.prep_for_like_query(word) + "%"
+            for word in words
+        ]
+        return queryset.extra(
+            where = (sql_str,),
+            params = sql_params,
+        )
         
     def save_search_entry(self, obj, search_entry, weighted_search_text):
         """Saves the search entry."""
         # Consolidate the search entry data.
         search_text = u" ".join(weighted_search_text)
-        data = {
-            "object_id": search_entry.object_id,
-            "object_id_int": search_entry.object_id_int,
-            "content_type_id": search_entry.content_type_id,
-            "meta_encoded": search_entry.meta_encoded,
-            "search_text": search_text,
-        }
         # Hijack the save with raw SQL!
+        sql_params = [
+            search_entry.object_id,
+            search_entry.object_id_int,
+            search_entry.content_type_id,
+            search_entry.meta_encoded,
+            search_text,
+        ]
         if search_entry.pk is None:
             # Perform a raw insert.
-            sql_str = "INSERT INTO %s (%s, %s, %s, %s, %s) VALUES (%s, %s, %s, %s, %s);"
-            sql_params = list(data.keys()) + list(data.values())
+            sql_str = u"""
+                INSERT INTO
+                    {watson_searchentry}
+                (
+                    {object_id},
+                    {object_id_int},
+                    {content_type_id},
+                    {meta_encoded},
+                    {search_text}
+                ) VALUES (
+                    %s, %s, %s, %s, %s
+                )"""
         else:
             # Perform a raw update.
-            sql_str = "UPDATE %s SET %s = %s, %s = %s, %s = %s, %s = %s, %s = %s WHERE %s = %s"
-            sql_params = list(data.items()) + [("id", search_entry.id)]
+            sql_str = u"""
+                UPDATE
+                    {watson_searchentry}
+                SET
+                    {object_id} = %s,
+                    {object_id_int} = %s,
+                    {content_type_id} = %s,
+                    {meta_encoded} = %s,
+                    {search_text} = %s,
+                    {id} = %s
+                """
+            sql_params.append(search_entry.id)
         # Perform the query.
+        sql_str = sql_str.format(**dict(
+            (column_name, connection.ops.quote_name(column_name))
+            for column_name in
+            (SearchEntry._meta.db_table, "object_id", "object_id_int", "content_type_id", "meta_encoded", "search_text", "id")
+        ))
         connection.cursor().execute(sql_str, sql_params)
         
         
