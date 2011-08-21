@@ -7,8 +7,6 @@ from django.utils.importlib import import_module
 from django.core.exceptions import ImproperlyConfigured
 from django.db import models, connection
 
-from south.db import db
-
 from watson.models import SearchEntry
 
 
@@ -59,6 +57,7 @@ class DumbSearchBackend(SearchBackend):
     
     def do_install(self):
         """Just create a dumb text column."""
+        from south.db import db
         db.add_column(SearchEntry._meta.db_table, "search_text", models.TextField(default=""), keep_default=False)
         
     def do_search(self, queryset, text):
@@ -67,7 +66,26 @@ class DumbSearchBackend(SearchBackend):
         
     def save_search_entry(self, obj, search_entry, weighted_search_text):
         """Saves the search entry."""
+        # Consolidate the search entry data.
         search_text = u" ".join(weighted_search_text)
+        data = {
+            "object_id": search_entry.object_id,
+            "object_id_int": search_entry.object_id_int,
+            "content_type_id": search_entry.content_type_id,
+            "meta_encoded": search_entry.meta_encoded,
+            "search_text": search_text,
+        }
+        # Hijack the save with raw SQL!
+        if search_entry.pk is None:
+            # Perform a raw insert.
+            sql_str = "INSERT INTO %s (%s, %s, %s, %s, %s) VALUES (%s, %s, %s, %s, %s);"
+            sql_params = list(data.keys()) + list(data.values())
+        else:
+            # Perform a raw update.
+            sql_str = "UPDATE %s SET %s = %s, %s = %s, %s = %s, %s = %s, %s = %s WHERE %s = %s"
+            sql_params = list(data.items()) + [("id", search_entry.id)]
+        # Perform the query.
+        connection.cursor().execute(sql_str, sql_params)
         
         
 class AdaptiveSearchBackend(SearchBackend):
