@@ -59,7 +59,7 @@ class SearchBackend(object):
                     # We have to do this as two separate queries. Oh well.
                     live_subquery = Q(
                         content_type = content_type,
-                        object_id_int__in = [unicode(pk) for pk in live_pks],
+                        object_id__in = [unicode(pk) for pk in live_pks],
                     )
             else:
                 live_subquery = Q(
