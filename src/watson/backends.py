@@ -8,8 +8,8 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models, connection
 from django.db.models import Q
 
-from watson.models import SearchEntry
-from watson.registration import get_registered_models
+from watson.models import SearchEntry, has_int_pk
+from watson.registration import get_registered_models, get_adaptor
 
 
 class SearchBackend(object):
@@ -46,6 +46,25 @@ class SearchBackend(object):
                 for model in allowed_models
             ]
             queryset = queryset.filter(content_type__in=content_types)
+        # Perform any live filters.
+        live_subqueries = []
+        for model in allowed_models:
+            content_type = ContentType.objects.get_for_model(model)
+            adaptor = get_adaptor(model)
+            if adaptor.live_filter:
+                live_pks = model._default_manager.all().values_list("pk", flat=True)
+                if has_int_pk(model):
+                    # We can do this as an in-database join.
+                    live_subquery = Q(
+                        content_type = content_type,
+                        object_id_int__in = live_pks,
+                    )
+                else:
+                    # We have to do this as two separate queries. Oh well.
+                    live_subquery = Q(
+                        content_type = content_type,
+                        object_id_int__in = [unicode(pk) for pk in live_pks],
+                    )
         # Perform the backend-specific full text match.
         queryset = self.do_search(queryset, search_text)
         return queryset
