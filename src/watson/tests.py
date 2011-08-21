@@ -3,7 +3,7 @@
 from django.db import models
 from django.test import TestCase
 
-from watson.registration import register, unregister, is_registered, get_registered_models, get_adaptor, RegistrationError, SearchAdaptor, search_context_manager, get_backend
+from watson.registration import register, unregister, is_registered, get_registered_models, get_adapter, RegistrationError, SearchAdapter, search_context_manager, get_backend
 
 
 class TestModelBase(models.Model):
@@ -58,13 +58,13 @@ class RegistrationText(TestCase):
         self.assertTrue(is_registered(TestModel1))
         self.assertRaises(RegistrationError, lambda: register(TestModel1))
         self.assertEqual(get_registered_models(), [TestModel1])
-        self.assertTrue(isinstance(get_adaptor(TestModel1), SearchAdaptor))
+        self.assertTrue(isinstance(get_adapter(TestModel1), SearchAdapter))
         # Unregister the model and text.
         unregister(TestModel1)
         self.assertFalse(is_registered(TestModel1))
         self.assertRaises(RegistrationError, lambda: unregister(TestModel1))
         self.assertEqual(get_registered_models(), [])
-        self.assertRaises(RegistrationError, lambda: isinstance(get_adaptor(TestModel1)))
+        self.assertRaises(RegistrationError, lambda: isinstance(get_adapter(TestModel1)))
         
         
 class SearchTest(TestCase):

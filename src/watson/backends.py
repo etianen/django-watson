@@ -9,7 +9,7 @@ from django.db import models, connection
 from django.db.models import Q
 
 from watson.models import SearchEntry, has_int_pk
-from watson.registration import get_registered_models, get_adaptor
+from watson.registration import get_registered_models, get_adapter
 
 
 class SearchBackend(object):
@@ -50,8 +50,8 @@ class SearchBackend(object):
         live_subqueries = []
         for model in allowed_models:
             content_type = ContentType.objects.get_for_model(model)
-            adaptor = get_adaptor(model)
-            if adaptor.live_filter:
+            adapter = get_adapter(model)
+            if adapter.live_filter:
                 live_pks = model._default_manager.all().values_list("pk", flat=True)
                 if has_int_pk(model):
                     # We can do this as an in-database join.

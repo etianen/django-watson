@@ -1,4 +1,4 @@
-"""Adaptors for registering models with django-watson."""
+"""Adapters for registering models with django-watson."""
 
 from threading import local
 from contextlib import contextmanager
@@ -15,9 +15,9 @@ from django.utils.importlib import import_module
 from watson.models import SearchEntry, has_int_pk
 
 
-class SearchAdaptor(object):
+class SearchAdapter(object):
 
-    """An adaptor for performing a full-text search on a model."""
+    """An adapter for performing a full-text search on a model."""
     
     # If set to True, then the search engine will only return
     # models accessible from the default manager of the model. This allows
@@ -35,7 +35,7 @@ class SearchAdaptor(object):
     store = None
     
     def __init__(self, model):
-        """Initializes the search adaptor."""
+        """Initializes the search adapter."""
         self.model = model
     
     def get_meta(self, obj):
@@ -100,7 +100,7 @@ def is_registered(model):
     return model in _registered_models
 
 
-def register(model, adaptor_cls=SearchAdaptor):
+def register(model, adapter_cls=SearchAdapter):
     """
     Registers the given model with django-watson.
     
@@ -114,8 +114,8 @@ def register(model, adaptor_cls=SearchAdaptor):
             model = model,
         ))
     # Perform the registration.
-    adaptor_obj = adaptor_cls(model)
-    _registered_models[model] = adaptor_obj
+    adapter_obj = adapter_cls(model)
+    _registered_models[model] = adapter_obj
     # Connect to the signalling framework.
     post_save.connect(search_context_manager.post_save_receiver, model)
     pre_delete.connect(search_context_manager.pre_delete_receiver, model)
@@ -146,8 +146,8 @@ def get_registered_models():
     return _registered_models.keys()
     
     
-def get_adaptor(model):
-    """Returns the adaptor associated with the given model."""
+def get_adapter(model):
+    """Returns the adapter associated with the given model."""
     global _registered_models
     if is_registered(model):
         return _registered_models[model]
@@ -211,12 +211,12 @@ class SearchContextManager(local):
     def update_obj_index(self, obj):
         """Updates the search index for the given obj."""
         model = obj.__class__
-        adaptor = get_adaptor(model)
+        adapter = get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
         object_id = unicode(obj.pk)
         # Create the search data.
-        meta = adaptor.get_meta(obj)
-        weighted_search_text = adaptor.get_weighted_search_text(obj)
+        meta = adapter.get_meta(obj)
+        weighted_search_text = adapter.get_weighted_search_text(obj)
         # Try to get the existing search entry.
         object_id_int, search_entries = self._get_entries_for_obj(obj)
         try:
