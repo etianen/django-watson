@@ -44,13 +44,86 @@ class PostgresSearchBackend(SearchBackend):
     
     def do_install(self):
         """Generates the PostgreSQL specific SQL code to install django-watson."""
+        connection.cursor().execute("""
+            ALTER TABLE "watson_searchentry" ADD COLUMN "search_tsv" tsvector NOT NULL;
+
+            CREATE INDEX "watson_searchentry_search_tsv" ON "watson_searchentry" USING gin("search_tsv");
+        """)
         
+    def save_search_entry(self, obj, search_entry, weighted_search_text):
+        """Saves the search entry."""        
+        sql_params = [
+            search_entry.object_id,
+            search_entry.object_id_int,
+            search_entry.content_type_id,
+            search_entry.meta_encoded,
+            u" ".join(weighted_search_text[:1]),
+            u" ".join(weighted_search_text[1:2]),
+            u" ".join(weighted_search_text[2:3]),
+            u" ".join(weighted_search_text[3:]),
+        ]
+        if search_entry.pk is None:
+            # Perform a raw insert.
+            sql_str = u"""
+                INSERT INTO
+                    "watson_searchentry"
+                (
+                    "object_id",
+                    "object_id_int",
+                    "content_type_id",
+                    "meta_encoded",
+                    "search_tsv"
+                ) VALUES (
+                    %s,
+                    %s,
+                    %s,
+                    %s,
+                    (
+                        setweight(to_tsvector(%s), 'A') ||
+                        setweight(to_tsvector(%s), 'B') ||
+                        setweight(to_tsvector(%s), 'C') ||
+                        setweight(to_tsvector(%s), 'D')
+                    )
+                )"""
+        else:
+            # Perform a raw update.
+            sql_str = u"""
+                UPDATE
+                    "watson_searchentry"
+                SET
+                    "object_id" = %s,
+                    "object_id_int" = %s,
+                    "content_type_id" = %s,
+                    "meta_encoded" = %s,
+                    "search_tsv" = (
+                        setweight(to_tsvector(%s), 'A') ||
+                        setweight(to_tsvector(%s), 'B') ||
+                        setweight(to_tsvector(%s), 'C') ||
+                        setweight(to_tsvector(%s), 'D')
+                    ),
+                    "id" = %s
+                """
+            sql_params.append(search_entry.id)
+        # Perform the query.
+        connection.cursor().execute(sql_str, sql_params)
+        
+    def do_search(self, queryset, search_text):
+        """Performs the full text search."""
+        return queryset.extra(
+            select = {
+                "rank": 'ts_rank_cd("search_tsv", plainto_tsquery(%s))',
+            },
+            select_params = (search_text,),
+            where = ('"search_tsv" @@ plainto_tsquery(%s)',),
+            params = (search_text,),
+            order_by = ("-rank",),
+        )
         
         
 class DumbSearchBackend(SearchBackend):
 
     """
-    A search backend that uses a straight containment search to find results.
+    A search backend that uses a dumb ILIKE search to find results.
     
     This is fine for debugging locally, but rubbish for production.
     """
@@ -122,7 +195,7 @@ class DumbSearchBackend(SearchBackend):
         sql_str = sql_str.format(**dict(
             (column_name, connection.ops.quote_name(column_name))
             for column_name in
-            (SearchEntry._meta.db_table, "object_id", "object_id_int", "content_type_id", "meta_encoded", "search_text", "id")
+            ("watson_searchentry", "object_id", "object_id_int", "content_type_id", "meta_encoded", "search_text", "id")
         ))
         connection.cursor().execute(sql_str, sql_params)
         
@@ -136,7 +209,6 @@ class AdaptiveSearchBackend(SearchBackend):
     
     def __new__(cls):
         """Guess the correct search backend and initialize it."""
-        return DumbSearchBackend()  # TODO: remove
         database_engine = settings.DATABASES["default"]["ENGINE"]
         if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
             return PostgresSearchBackend()
