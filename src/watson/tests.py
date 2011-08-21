@@ -8,7 +8,15 @@ from watson.registration import register, unregister, is_registered, get_registe
 from watson.models import SearchEntry
 
 
+class TestModelManager(models.Manager):
+
+    def get_query_set(self):
+        return super(TestModelManager, self).get_query_set().filter(is_published=True)
+
+
 class TestModelBase(models.Model):
+
+    objects = TestModelManager()
 
     title = models.CharField(
         max_length = 200,
@@ -20,6 +28,10 @@ class TestModelBase(models.Model):
     
     description = models.TextField(
         blank = True,
+    )
+    
+    is_published = models.BooleanField(
+        default = True,
     )
     
     def __unicode__(self):
@@ -191,3 +203,16 @@ class LiveFilterSearchTest(SearchTest):
     search_adapter_1 = LiveFilterSearchAdapter
     
     search_adapter_2 = LiveFilterModel2SearchAdapter
+    
+    def testUnpublishedModelsNotFound(self):
+        backend = get_backend()
+        # Make sure that there are four to find!
+        self.assertEqual(backend.search("tItle Content Description").count(), 4)
+        # Unpublish two objects.
+        with search_context_manager.context():
+            self.test11.is_published = False
+            self.test11.save()
+            self.test21.is_published = False
+            self.test21.save()
+        # This should return 4, but two of them are unpublished.
+        self.assertEqual(backend.search("tItle Content Description").count(), 2)
