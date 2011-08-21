@@ -69,11 +69,13 @@ class RegistrationText(TestCase):
         
         
 class SearchTest(TestCase):
-
+    
+    search_adaptor = SearchAdapter
+    
     @search_context_manager.update_index
     def setUp(self):
-        register(TestModel1)
-        register(TestModel2)
+        register(TestModel1, self.search_adaptor)
+        register(TestModel2, self.search_adaptor)
         # Create some test models.
         self.test11 = TestModel1.objects.create(
             title = "title model1 11",
@@ -162,3 +164,13 @@ class SearchTest(TestCase):
         del self.test12
         del self.test21
         del self.test22
+
+
+class LiveFilterSearchAdapter(SearchAdapter):
+
+    live_filter = True
+        
+        
+class LiveFilterSearchTest(SearchTest):
+
+    search_adaptor = LiveFilterSearchAdapter

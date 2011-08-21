@@ -41,18 +41,13 @@ class SearchBackend(object):
         allowed_models = models or get_registered_models()
         if exclude:
             allowed_models = [model for model in allowed_models if not model in exclude]
-        if models or exclude:
-            content_types = [
-                ContentType.objects.get_for_model(model)
-                for model in allowed_models
-            ]
-            queryset = queryset.filter(content_type__in=content_types)
         # Perform any live filters.
         live_subqueries = []
         for model in allowed_models:
             content_type = ContentType.objects.get_for_model(model)
             adapter = get_adapter(model)
             if adapter.live_filter:
+                needs_live_subquery = True
                 live_pks = model._default_manager.all().values_list("pk", flat=True)
                 if has_int_pk(model):
                     # We can do this as an in-database join.
@@ -66,9 +61,13 @@ class SearchBackend(object):
                         content_type = content_type,
                         object_id_int__in = [unicode(pk) for pk in live_pks],
                     )
-        if live_subqueries:
-            live_subquery = reduce(operator.or_, live_subqueries)
-            queryset = queryset.filter(live_subquery)
+            else:
+                live_subquery = Q(
+                    content_type = content_type,
+                )
+            live_subqueries.append(live_subquery)
+        live_subquery = reduce(operator.or_, live_subqueries)
+        queryset = queryset.filter(live_subquery)
         # Perform the backend-specific full text match.
         queryset = self.do_search(queryset, search_text)
         return queryset
