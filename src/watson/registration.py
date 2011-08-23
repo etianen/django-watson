@@ -9,6 +9,7 @@ from weakref import WeakValueDictionary
 from django.conf import settings
 from django.core.signals import request_started, request_finished
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 from django.db import models
 from django.db.models import Q
 from django.db.models.signals import post_save, pre_delete
@@ -255,6 +256,18 @@ class SearchEngine(object):
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[model] = adapter_obj
+        # Add in a generic relation, if not exists.
+        if not hasattr(model, "searchentry_set"):
+            if has_int_pk(model):
+                object_id_field = "object_id_int"
+            else:
+                object_id_field = "object_id"
+            generic_relation = generic.GenericRelation(
+                SearchEntry,
+                object_id_field = object_id_field,
+            )
+            model.searchentry_set = generic_relation
+            generic_relation.contribute_to_class(model, "searchentry_set")
         # Connect to the signalling framework.
         post_save.connect(self.post_save_receiver, model)
         pre_delete.connect(self.pre_delete_receiver, model)
@@ -390,6 +403,18 @@ class SearchEngine(object):
         queryset = queryset.filter(live_subquery)
         # Perform the backend-specific full text match.
         queryset = get_backend().do_search(queryset, search_text)
+        return queryset
+        
+    def filter(self, queryset, search_text):
+        """
+        Filters the given model or queryset using the given text, returning the
+        modified queryset.
+        """
+        # If the queryset is a model, get all of them.
+        if issubclass(queryset, models.Model):
+            queryset = queryset._default_manager.all()
+        # Do the filter.
+        queryset = get_backend().do_filter(queryset, search_text)
         return queryset
 
 

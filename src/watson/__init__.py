@@ -9,8 +9,9 @@ Developed by Dave Hall.
 from watson.registration import SearchAdapter, default_search_engine
 
 
-# The main search method.
+# The main search methods.
 search = default_search_engine.search
+filter = default_search_engine.filter
 
 
 # Easy registration.

@@ -9,6 +9,17 @@ from django.db.models import Q
 from watson.models import SearchEntry, has_int_pk
 
 
+def regex_from_search_text(search_text):
+    """Generates a regext from the given search text"""
+    words = search_text.split()
+    return u"|".join(
+        u"(\s{word}\s)|(^{word}\s)|(\s{word}$)|(^{word}$)".format(
+            word = word,
+        )
+        for word in words
+    )
+
+
 class SearchBackend(object):
 
     """Base class for all search backends."""
@@ -19,15 +30,16 @@ class SearchBackend(object):
         
     def do_search(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        words = search_text.split()
-        regex = u"|".join(
-            u"(\s{word}\s)|(^{word}\s)|(\s{word}$)|(^{word}$)".format(
-                word = word,
-            )
-            for word in words
-        )
+        regex = regex_from_search_text(search_text)
         return queryset.filter(
             Q(title__iregex=regex) | Q(content__iregex=regex) | Q(content__iregex=regex),
+        )
+        
+    def do_filter(self, queryset, search_text):
+        """Filters the given queryset according the the search logic for this backend."""
+        regex = regex_from_search_text(search_text)
+        return queryset.filter(
+            Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex),
         )
     
     def save_search_entry(self, search_entry, obj, adapter):

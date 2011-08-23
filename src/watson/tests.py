@@ -168,7 +168,16 @@ class SearchTest(TestCase):
         call_command("buildwatson")
         # Test that the update is now applies.
         self.assertEqual(watson.search("foo").count(), 1)
-        
+    
+    def testFilter(self):
+        for model in (TestModel1, TestModel2):
+            # Test can find all.
+            self.assertEqual(watson.filter(model, "title model1").count(), 2)
+        # Test can find a specific one.
+        obj = watson.filter(TestModel1, "12").get()
+        self.assertTrue(isinstance(obj, TestModel1))
+        self.assertEqual(obj.title, "title model1 12")
+    
     def tearDown(self):
         watson.unregister(TestModel1)
         watson.unregister(TestModel2)
