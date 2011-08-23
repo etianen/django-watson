@@ -21,7 +21,12 @@ META_CACHE_KEY = "_meta_cache"
 class SearchEntry(models.Model):
 
     """An entry in the search index."""
-
+    
+    engine_slug = models.CharField(
+        max_length = 200,
+        db_index = True,
+    )
+    
     content_type = models.ForeignKey(
         ContentType,
     )
@@ -35,6 +40,23 @@ class SearchEntry(models.Model):
     )
     
     object = generic.GenericForeignKey()
+    
+    title = models.CharField(
+        max_length = 1000,
+    )
+    
+    description = models.TextField(
+        blank = True,
+    )
+    
+    content = models.TextField(
+        blank = True,
+    )
+    
+    url = models.CharField(
+        max_length = 1000,
+        blank = True,
+    )
     
     meta_encoded = models.TextField()
     
@@ -57,3 +79,14 @@ class SearchEntry(models.Model):
             delattr(self, META_CACHE_KEY)
         # Set the meta.
         self.meta_encoded = cPickle.dumps(meta_value).decode("utf-8")
+        
+    def get_absolute_url(self):
+        """Returns the URL of the referenced object."""
+        return self.url
+        
+    def __unicode__(self):
+        """Returns a unicode representation."""
+        return self.title
+        
+    class Meta:
+        verbose_name_plural = "search entries"

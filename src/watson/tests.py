@@ -4,7 +4,8 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 
-from watson.registration import register, unregister, is_registered, get_registered_models, get_adapter, RegistrationError, SearchAdapter, search_context_manager, get_backend
+import watson
+from watson.registration import RegistrationError
 from watson.models import SearchEntry
 
 
@@ -64,38 +65,38 @@ class TestModel2(TestModelBase):
     )
     
     
-class TestModel2SearchAdapter(SearchAdapter):
+class TestModel2SearchAdapter(watson.SearchAdapter):
 
     exclude = ("id",)
 
 
-class RegistrationText(TestCase):
+class RegistrationTest(TestCase):
     
     def testRegistration(self):
         # Register the model and test.
-        register(TestModel1)
-        self.assertTrue(is_registered(TestModel1))
-        self.assertRaises(RegistrationError, lambda: register(TestModel1))
-        self.assertEqual(get_registered_models(), [TestModel1])
-        self.assertTrue(isinstance(get_adapter(TestModel1), SearchAdapter))
+        watson.register(TestModel1)
+        self.assertTrue(watson.is_registered(TestModel1))
+        self.assertRaises(RegistrationError, lambda: watson.register(TestModel1))
+        self.assertEqual(watson.get_registered_models(), [TestModel1])
+        self.assertTrue(isinstance(watson.get_adapter(TestModel1), watson.SearchAdapter))
         # Unregister the model and text.
-        unregister(TestModel1)
-        self.assertFalse(is_registered(TestModel1))
-        self.assertRaises(RegistrationError, lambda: unregister(TestModel1))
-        self.assertEqual(get_registered_models(), [])
-        self.assertRaises(RegistrationError, lambda: isinstance(get_adapter(TestModel1)))
+        watson.unregister(TestModel1)
+        self.assertFalse(watson.is_registered(TestModel1))
+        self.assertRaises(RegistrationError, lambda: watson.unregister(TestModel1))
+        self.assertEqual(watson.get_registered_models(), [])
+        self.assertRaises(RegistrationError, lambda: isinstance(watson.get_adapter(TestModel1)))
         
         
 class SearchTest(TestCase):
     
-    search_adapter_1 = SearchAdapter
+    search_adapter_1 = watson.SearchAdapter
     
     search_adapter_2 = TestModel2SearchAdapter
     
-    @search_context_manager.update_index
+    @watson.update_index
     def setUp(self):
-        register(TestModel1, self.search_adapter_1)
-        register(TestModel2, self.search_adapter_2)
+        watson.register(TestModel1, self.search_adapter_1)
+        watson.register(TestModel2, self.search_adapter_2)
         # Create some test models.
         self.test11 = TestModel1.objects.create(
             title = "title model1 11",
@@ -118,65 +119,63 @@ class SearchTest(TestCase):
             description = "description model2 22",
         )
     
+    def testSearchEntriesCreated(self):
+        self.assertEqual(SearchEntry.objects.count(), 4)
+    
     def testMultiTableSearch(self):
-        backend = get_backend()
         # Test a search that should get all models.
-        self.assertEqual(backend.search("tItle Content Description").count(), 4)
+        self.assertEqual(watson.search("tItle Content Description").count(), 4)
         # Test a search that should get two models.
-        self.assertEqual(backend.search("mOdel1").count(), 2)
+        self.assertEqual(watson.search("mOdel1").count(), 2)
         # Test a search that should get one model.
-        exact_search = backend.search("11")
+        exact_search = watson.search("11")
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+        self.assertEqual(exact_search[0].title, "title model1 11")
     
     def testUpdateSearchIndex(self):
-        backend = get_backend()
         # Update a model and make sure that the search results match.
-        with search_context_manager.context():
+        with watson.context():
             self.test11.title = "foo"
             self.test11.save()
         # Test a search that should get one model.
-        exact_search = backend.search("foo")
+        exact_search = watson.search("foo")
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].meta["title"], "foo")
+        self.assertEqual(exact_search[0].title, "foo")
     
     def testLimitedModelList(self):
-        backend = get_backend()
         # Test a search that should get all models.
-        self.assertEqual(backend.search("tItle Content Description", models=(TestModel1,)).count(), 2)
+        self.assertEqual(watson.search("tItle Content Description", models=(TestModel1,)).count(), 2)
         # Test a search that should get one model.
-        exact_search = backend.search("11", models=(TestModel1,))
+        exact_search = watson.search("11", models=(TestModel1,))
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+        self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get no models.
-        self.assertEqual(backend.search("11", models=(TestModel2,)).count(), 0)
+        self.assertEqual(watson.search("11", models=(TestModel2,)).count(), 0)
         
     def testExcludedModelList(self):
-        backend = get_backend()
         # Test a search that should get all models.
-        self.assertEqual(backend.search("tItle Content Description", exclude=(TestModel2,)).count(), 2)
+        self.assertEqual(watson.search("tItle Content Description", exclude=(TestModel2,)).count(), 2)
         # Test a search that should get one model.
-        exact_search = backend.search("11", exclude=(TestModel2,))
+        exact_search = watson.search("11", exclude=(TestModel2,))
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].meta["title"], "title model1 11")
+        self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get no models.
-        self.assertEqual(backend.search("11", exclude=(TestModel1,)).count(), 0)
+        self.assertEqual(watson.search("11", exclude=(TestModel1,)).count(), 0)
             
     def testRebuildWatsonCommand(self):
-        backend = get_backend()
         # This update won't take affect, because no search context is active.
         self.test11.title = "foo"
         self.test11.save()
         # Test that no update has happened.
-        self.assertEqual(backend.search("foo").count(), 0)
+        self.assertEqual(watson.search("foo").count(), 0)
         # Run the rebuild command.
-        call_command("rebuildwatson")
+        call_command("buildwatson")
         # Test that the update is now applies.
-        self.assertEqual(backend.search("foo").count(), 1)
+        self.assertEqual(watson.search("foo").count(), 1)
         
     def tearDown(self):
-        unregister(TestModel1)
-        unregister(TestModel2)
+        watson.unregister(TestModel1)
+        watson.unregister(TestModel2)
         # Delete the test models.
         TestModel1.objects.all().delete()
         TestModel2.objects.all().delete()
@@ -188,7 +187,7 @@ class SearchTest(TestCase):
         SearchEntry.objects.all().delete()
 
 
-class LiveFilterSearchAdapter(SearchAdapter):
+class LiveFilterSearchAdapter(watson.SearchAdapter):
 
     live_filter = True
     
@@ -205,14 +204,13 @@ class LiveFilterSearchTest(SearchTest):
     search_adapter_2 = LiveFilterModel2SearchAdapter
     
     def testUnpublishedModelsNotFound(self):
-        backend = get_backend()
         # Make sure that there are four to find!
-        self.assertEqual(backend.search("tItle Content Description").count(), 4)
+        self.assertEqual(watson.search("tItle Content Description").count(), 4)
         # Unpublish two objects.
-        with search_context_manager.context():
+        with watson.context():
             self.test11.is_published = False
             self.test11.save()
             self.test21.is_published = False
             self.test21.save()
         # This should return 4, but two of them are unpublished.
-        self.assertEqual(backend.search("tItle Content Description").count(), 2)
+        self.assertEqual(watson.search("tItle Content Description").count(), 2)

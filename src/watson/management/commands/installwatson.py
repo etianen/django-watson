@@ -16,4 +16,4 @@ class Command(NoArgsCommand):
         """Runs the management command."""
         backend = get_backend()
         install_sql = backend.do_install()
-        call_command("rebuildwatson")
+        call_command("buildwatson")
