@@ -141,6 +141,9 @@ class SearchTest(TestCase):
         exact_search = watson.search("foo")
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].title, "foo")
+        # Delete a model and make sure that the search results match.
+        self.test11.delete()
+        self.assertEqual(watson.search("foo").count(), 0)
     
     def testLimitedModelList(self):
         # Test a search that should get all models.
