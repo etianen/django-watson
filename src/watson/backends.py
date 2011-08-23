@@ -42,9 +42,38 @@ class PostgresSearchBackend(SearchBackend):
     def do_install(self):
         """Generates the PostgreSQL specific SQL code to install django-watson."""
         connection.cursor().execute("""
-            ALTER TABLE "watson_searchentry" ADD COLUMN "search_tsv" tsvector NOT NULL;
+            -- Ensure that plpgsql is installed.
+            CREATE OR REPLACE FUNCTION make_plpgsql() RETURNS VOID LANGUAGE SQL AS
+            $$
+                CREATE LANGUAGE plpgsql;
+            $$;
+            SELECT
+                CASE
+                WHEN EXISTS(
+                    SELECT 1
+                    FROM pg_catalog.pg_language
+                    WHERE lanname='plpgsql'
+                )
+                THEN NULL
+                ELSE make_plpgsql() END;
+            DROP FUNCTION make_plpgsql();
 
-            CREATE INDEX "watson_searchentry_search_tsv" ON "watson_searchentry" USING gin("search_tsv");
+            -- Create the search index.
+            ALTER TABLE watson_searchentry ADD COLUMN search_tsv tsvector NOT NULL;
+            CREATE INDEX watson_searchentry_search_tsv ON watson_searchentry USING gin(search_tsv);
+            
+            -- Create the trigger function.
+            CREATE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
+            begin
+                new.search_tsv :=
+                    setweight(to_tsvector('pg_catalog.english', coalesce(new.title, '')), 'A') ||
+                    setweight(to_tsvector('pg_catalog.english', coalesce(new.description, '')), 'C') ||
+                    setweight(to_tsvector('pg_catalog.english', coalesce(new.content, '')), 'D');
+                return new;
+            end
+            $$ LANGUAGE plpgsql;
+            CREATE TRIGGER watson_searchitem_trigger BEFORE INSERT OR UPDATE
+            ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
         """)
         
     def do_search(self, queryset, search_text):
@@ -69,7 +98,6 @@ class AdaptiveSearchBackend(SearchBackend):
     
     def __new__(cls):
         """Guess the correct search backend and initialize it."""
-        return SearchBackend()
         database_engine = settings.DATABASES["default"]["ENGINE"]
         if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
             return PostgresSearchBackend()
