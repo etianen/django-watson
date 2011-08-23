@@ -63,11 +63,6 @@ class TestModel2(TestModelBase):
         max_length = 100,
         default = get_str_pk
     )
-    
-    
-class TestModel2SearchAdapter(watson.SearchAdapter):
-
-    exclude = ("id",)
 
 
 class RegistrationTest(TestCase):
@@ -89,14 +84,12 @@ class RegistrationTest(TestCase):
         
 class SearchTest(TestCase):
     
-    search_adapter_1 = watson.SearchAdapter
-    
-    search_adapter_2 = TestModel2SearchAdapter
+    live_filter = False
     
     @watson.update_index
     def setUp(self):
-        watson.register(TestModel1, self.search_adapter_1)
-        watson.register(TestModel2, self.search_adapter_2)
+        watson.register(TestModel1, live_filter=self.live_filter)
+        watson.register(TestModel2, exclude=("id",), live_filter=self.live_filter)
         # Create some test models.
         self.test11 = TestModel1.objects.create(
             title = "title model1 11",
@@ -188,23 +181,11 @@ class SearchTest(TestCase):
         del self.test22
         # Delete the search index.
         SearchEntry.objects.all().delete()
-
-
-class LiveFilterSearchAdapter(watson.SearchAdapter):
-
-    live_filter = True
-    
-    
-class LiveFilterModel2SearchAdapter(TestModel2SearchAdapter):
-
-    live_filter = True
         
         
 class LiveFilterSearchTest(SearchTest):
-
-    search_adapter_1 = LiveFilterSearchAdapter
     
-    search_adapter_2 = LiveFilterModel2SearchAdapter
+    live_filter = True
     
     def testUnpublishedModelsNotFound(self):
         # Make sure that there are four to find!
