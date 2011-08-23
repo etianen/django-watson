@@ -92,10 +92,35 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text search."""
         return queryset.extra(
             select = {
-                "rank": 'ts_rank_cd("search_tsv", plainto_tsquery(%s))',
+                "rank": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
             },
             select_params = (search_text,),
-            where = ('"search_tsv" @@ plainto_tsquery(%s)',),
+            where = ("search_tsv @@ plainto_tsquery(%s)",),
+            params = (search_text,),
+            order_by = ("-rank",),
+        )
+        
+    def do_filter(self, queryset, search_text):
+        """Performs the full text filter."""
+        model = queryset.model
+        if has_int_pk(model):
+            ref_name = "object_id_int"
+        else:
+            ref_name = "object_id"
+        return queryset.extra(
+            select = {
+                "rank": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
+            },
+            select_params = (search_text,),
+            tables = ("watson_searchentry",),
+            where = (
+                "watson_searchentry.search_tsv @@ plainto_tsquery(%s)",
+                "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
+                    ref_name = ref_name,
+                    table_name = connection.ops.quote_name(model._meta.db_table),
+                    pk_name = connection.ops.quote_name(model._meta.pk.name),
+                ),
+            ),
             params = (search_text,),
             order_by = ("-rank",),
         )
