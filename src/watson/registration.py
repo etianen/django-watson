@@ -117,6 +117,18 @@ class SearchAdapter(object):
             (field_name, self._resolve_field(field_name))
             for field_name in self.store
         )
+        
+    def get_live_queryset(self):
+        """
+        Returns the queryset of objects that should be considered live.
+        
+        If this returns none, then all objects should be considered live, which is more efficient.
+        The default implementation looks at the value of self.live_filter, and if True, returns
+        the contents of the default object manager.
+        """
+        if self.live_filter:
+            return self.model._default_manager.all()
+        return None
 
 
 class SearchEngineError(Exception):
@@ -381,33 +393,33 @@ class SearchEngine(object):
         )
         # Process the allowed models.
         allowed_models = {}
+        def combine_queryset(model, sub_queryset, combinator):
+            existing_queryset = allowed_models.get(model)
+            if existing_queryset is None:
+                existing_queryset = model._default_manager.all()
+            new_queryset = combinator(existing_queryset, sub_queryset)
+            allowed_models[model] = new_queryset
         for model in models or self.get_registered_models():
             # Process the specified model.
             if isinstance(model, type) and issubclass(model, Model):
-                allowed_models.setdefault(model, None)
+                adapter = self.get_adapter(model)
+                live_queryset = adapter.get_live_queryset()
+                if live_queryset is None:
+                    allowed_models.setdefault(model, None)
+                else:
+                    combine_queryset(model, live_queryset, operator.or_)
             elif isinstance(model, QuerySet):
-                sub_queryset = model
-                model = model.model
-                existing_queryset = allowed_models.get(model) or model._default_manager.all()
-                allowed_models[model] = existing_queryset | sub_queryset
+                combine_queryset(model.model, model, operator.or_)
             else:
                 raise TypeError("Included models should be a model class or a queryset, not {model!r}".format(
                     model = model,
                 ))
-            # Add in the live filter if applicable.
-            adapter = self.get_adapter(model)
-            if adapter.live_filter:
-                existing_queryset = allowed_models.get(model) or model._default_manager.all()
-                allowed_models[model] = existing_queryset | model._default_manager.all()
         # Process the excluded models.
         for model in exclude:
             if isinstance(model, type) and issubclass(model, Model):
                 allowed_models.pop(model, None)
             elif isinstance(model, QuerySet):
-                sub_queryset = model
-                model = model.model
-                existing_queryset = allowed_models.get(model) or model._default_manager.all()
-                allowed_models[model] = existing_queryset & sub_queryset
+                combine_queryset(model.model, model, operator.and_)
             else:
                 raise TypeError("Excluded models should be a model class or a queryset, not {model!r}".format(
                     model = model,
