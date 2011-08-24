@@ -26,15 +26,16 @@ class Command(NoArgsCommand):
                     search_engine.update_obj_index(obj)
                     local_refreshed_model_count += 1
                     if verbosity >= 3:
-                        print u"Refreshed search entry for {model} {obj}.".format(
+                        print u"Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
                             model = model._meta.verbose_name,
                             obj = obj,
+                            engine_slug = engine_slug,
                         )
                 refreshed_model_count += local_refreshed_model_count
                 if verbosity == 2:
                     print u"Refreshed {local_refreshed_model_count} {model} search entry(s) in {engine_slug!r} search engine.".format(
                         model = model._meta.verbose_name,
-                        refreshed_model_count = refreshed_model_count,
+                        local_refreshed_model_count = local_refreshed_model_count,
                         engine_slug = engine_slug,
                     )
             if verbosity == 1:
