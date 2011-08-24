@@ -222,7 +222,7 @@ class SearchTest(SearchTestBase):
     def testFilter(self):
         for model in (TestModel1, TestModel2):
             # Test can find all.
-            self.assertEqual(watson.filter(model, "title model1").count(), 2)
+            self.assertEqual(watson.filter(model, "title").count(), 2)
         # Test can find a specific one.
         obj = watson.filter(TestModel1, "12").get()
         self.assertTrue(isinstance(obj, TestModel1))

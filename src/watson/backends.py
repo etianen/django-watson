@@ -1,6 +1,6 @@
 """Search backends used by django-watson."""
 
-import re
+import re, operator
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -11,14 +11,10 @@ from django.db.models import Q
 from watson.models import SearchEntry, has_int_pk
 
 
-def regex_from_search_text(search_text):
-    """Generates a regext from the given search text"""
-    words = search_text.split()
-    return u"|".join(
-        u"(\s{word}\s)|(^{word}\s)|(\s{word}$)|(^{word}$)".format(
-            word = re.escape(word),
-        )
-        for word in words
+def regex_from_word(word):
+    """Generates a regext from the given search word."""
+    return u"(\s{word}\s)|(^{word}\s)|(\s{word}$)|(^{word}$)".format(
+        word = re.escape(word),
     )
 
 
@@ -32,16 +28,24 @@ class SearchBackend(object):
         
     def do_search(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        regex = regex_from_search_text(search_text)
+        word_queries = []
+        for word in search_text.split():
+            regex = regex_from_word(word)
+            word_queries.append(Q(title__iregex=regex) | Q(content__iregex=regex) | Q(content__iregex=regex))
+        word_query = reduce(operator.and_, word_queries)
         return queryset.filter(
-            Q(title__iregex=regex) | Q(content__iregex=regex) | Q(content__iregex=regex),
+            word_query
         )
         
     def do_filter(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        regex = regex_from_search_text(search_text)
+        word_queries = []
+        for word in search_text.split():
+            regex = regex_from_word(word)
+            word_queries.append(Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex))
+        word_query = reduce(operator.and_, word_queries)
         return queryset.filter(
-            Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex),
+            word_query
         )
     
     def save_search_entry(self, search_entry, obj, adapter):
@@ -105,6 +109,7 @@ class PostgresSearchBackend(SearchBackend):
     def do_filter(self, queryset, search_text):
         """Performs the full text filter."""
         model = queryset.model
+        content_type = ContentType.objects.get_for_model(model)
         if has_int_pk(model):
             ref_name = "object_id_int"
         else:
@@ -122,8 +127,9 @@ class PostgresSearchBackend(SearchBackend):
                     table_name = connection.ops.quote_name(model._meta.db_table),
                     pk_name = connection.ops.quote_name(model._meta.pk.name),
                 ),
+                "watson_searchentry.content_type_id = %s"
             ),
-            params = (search_text,),
+            params = (search_text, content_type.id),
             order_by = ("-rank",),
         )
         
