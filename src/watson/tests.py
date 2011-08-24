@@ -80,12 +80,12 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: watson.unregister(TestModel1))
         self.assertEqual(watson.get_registered_models(), [])
         self.assertRaises(RegistrationError, lambda: isinstance(watson.get_adapter(TestModel1)))
-        
-        
-class SearchTest(TestCase):
-    
+
+
+class SearchTestBase(TestCase):
+
     live_filter = False
-    
+
     @watson.update_index
     def setUp(self):
         watson.register(TestModel1, live_filter=self.live_filter)
@@ -111,9 +111,66 @@ class SearchTest(TestCase):
             content = "content model2 22",
             description = "description model2 22",
         )
-    
+
+    def tearDown(self):
+        watson.unregister(TestModel1)
+        watson.unregister(TestModel2)
+        # Delete the test models.
+        TestModel1.objects.all().delete()
+        TestModel2.objects.all().delete()
+        del self.test11
+        del self.test12
+        del self.test21
+        del self.test22
+        # Delete the search index.
+        SearchEntry.objects.all().delete()
+
+
+class InternalsTest(SearchTestBase):
+
     def testSearchEntriesCreated(self):
         self.assertEqual(SearchEntry.objects.count(), 4)
+        
+    def testRebuildWatsonCommand(self):
+        # This update won't take affect, because no search context is active.
+        self.test11.title = "foo"
+        self.test11.save()
+        # Test that no update has happened.
+        self.assertEqual(watson.search("foo").count(), 0)
+        # Run the rebuild command.
+        call_command("buildwatson")
+        # Test that the update is now applies.
+        self.assertEqual(watson.search("foo").count(), 1)
+        
+    def testUpdateSearchIndex(self):
+        # Update a model and make sure that the search results match.
+        with watson.context():
+            self.test11.title = "foo"
+            self.test11.save()
+        # Test a search that should get one model.
+        exact_search = watson.search("foo")
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].title, "foo")
+        
+    def testDeleteRegisteredModel(self):
+        # Delete a model and make sure that the search results match.
+        self.test11.delete()
+        self.assertEqual(watson.search("foo").count(), 0)
+        
+    def testFixesDuplicateSearchEntries(self):
+        # Duplicate a couple of search entries.
+        for search_entry in SearchEntry.objects.all()[:2]:
+            search_entry.id = None
+            search_entry.save()
+        # Make sure that we have six (including duplicates).
+        self.assertEqual(SearchEntry.objects.count(), 6)
+        # Run the rebuild command.
+        call_command("buildwatson")
+        # Make sure that we have four again (including duplicates).
+        self.assertEqual(SearchEntry.objects.count(), 4)
+        
+        
+class SearchTest(SearchTestBase):
     
     def testMultiTableSearch(self):
         # Test a search that should get all models.
@@ -124,19 +181,6 @@ class SearchTest(TestCase):
         exact_search = watson.search("11")
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].title, "title model1 11")
-    
-    def testUpdateSearchIndex(self):
-        # Update a model and make sure that the search results match.
-        with watson.context():
-            self.test11.title = "foo"
-            self.test11.save()
-        # Test a search that should get one model.
-        exact_search = watson.search("foo")
-        self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].title, "foo")
-        # Delete a model and make sure that the search results match.
-        self.test11.delete()
-        self.assertEqual(watson.search("foo").count(), 0)
     
     def testLimitedModelList(self):
         # Test a search that should get all models.
@@ -157,17 +201,6 @@ class SearchTest(TestCase):
         self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get no models.
         self.assertEqual(watson.search("11", exclude=(TestModel1,)).count(), 0)
-            
-    def testRebuildWatsonCommand(self):
-        # This update won't take affect, because no search context is active.
-        self.test11.title = "foo"
-        self.test11.save()
-        # Test that no update has happened.
-        self.assertEqual(watson.search("foo").count(), 0)
-        # Run the rebuild command.
-        call_command("buildwatson")
-        # Test that the update is now applies.
-        self.assertEqual(watson.search("foo").count(), 1)
     
     def testFilter(self):
         for model in (TestModel1, TestModel2):
@@ -177,19 +210,6 @@ class SearchTest(TestCase):
         obj = watson.filter(TestModel1, "12").get()
         self.assertTrue(isinstance(obj, TestModel1))
         self.assertEqual(obj.title, "title model1 12")
-    
-    def tearDown(self):
-        watson.unregister(TestModel1)
-        watson.unregister(TestModel2)
-        # Delete the test models.
-        TestModel1.objects.all().delete()
-        TestModel2.objects.all().delete()
-        del self.test11
-        del self.test12
-        del self.test21
-        del self.test22
-        # Delete the search index.
-        SearchEntry.objects.all().delete()
         
         
 class LiveFilterSearchTest(SearchTest):

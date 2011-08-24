@@ -341,6 +341,10 @@ class SearchEngine(object):
                 object_id = object_id,
                 object_id_int = object_id_int,
             )
+        except SearchEntry.MultipleObjectsReturned:
+            # Oh no! Some non-transactional database has messed up!
+            search_entry = search_entries[0]
+            search_entries.exclude(id=search_entry.id).delete()
         # Store data.
         search_entry.engine_slug = self._engine_slug
         search_entry.title = adapter.get_title(obj)
