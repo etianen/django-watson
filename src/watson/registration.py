@@ -57,17 +57,18 @@ class SearchAdapter(object):
         # Get the attribute.
         if hasattr(obj, name):
             value = getattr(obj, name)
+            if callable(value):
+                value = value()
         elif hasattr(self, name):
             value = getattr(self, name)
+            if callable(value):
+                value = value(obj)
         else:
             raise SearchAdapterError("Could not find a property called {name!r} on either {obj!r} or {search_adapter!r}".format(
                 name = name,
                 obj = obj,
                 search_adapter = self,
             ))
-        # Check for callables.
-        if callable(value):
-            value = value()
         # Resolution complete!
         return value
     
@@ -114,7 +115,7 @@ class SearchAdapter(object):
     def get_meta(self, obj):
         """Returns a dictionary of meta information about the given obj."""
         return dict(
-            (field_name, self._resolve_field(field_name))
+            (field_name, self._resolve_field(obj, field_name))
             for field_name in self.store
         )
         

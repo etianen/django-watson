@@ -72,13 +72,13 @@ class RegistrationTest(TestCase):
         watson.register(TestModel1)
         self.assertTrue(watson.is_registered(TestModel1))
         self.assertRaises(RegistrationError, lambda: watson.register(TestModel1))
-        self.assertEqual(watson.get_registered_models(), [TestModel1])
+        self.assertTrue(TestModel1 in watson.get_registered_models())
         self.assertTrue(isinstance(watson.get_adapter(TestModel1), watson.SearchAdapter))
         # Unregister the model and text.
         watson.unregister(TestModel1)
         self.assertFalse(watson.is_registered(TestModel1))
         self.assertRaises(RegistrationError, lambda: watson.unregister(TestModel1))
-        self.assertEqual(watson.get_registered_models(), [])
+        self.assertTrue(TestModel1 not in watson.get_registered_models())
         self.assertRaises(RegistrationError, lambda: isinstance(watson.get_adapter(TestModel1)))
 
 
@@ -138,7 +138,7 @@ class InternalsTest(SearchTestBase):
         # Test that no update has happened.
         self.assertEqual(watson.search("foo").count(), 0)
         # Run the rebuild command.
-        call_command("buildwatson")
+        call_command("buildwatson", verbosity=0)
         # Test that the update is now applies.
         self.assertEqual(watson.search("foo").count(), 1)
         
@@ -165,7 +165,7 @@ class InternalsTest(SearchTestBase):
         # Make sure that we have six (including duplicates).
         self.assertEqual(SearchEntry.objects.count(), 6)
         # Run the rebuild command.
-        call_command("buildwatson")
+        call_command("buildwatson", verbosity=0)
         # Make sure that we have four again (including duplicates).
         self.assertEqual(SearchEntry.objects.count(), 4)
     

@@ -21,10 +21,23 @@ class Command(NoArgsCommand):
             # Rebuild the index for all registered models.
             refreshed_model_count = 0
             for model in registered_models:
+                local_refreshed_model_count = 0
                 for obj in model._default_manager.all().iterator():
                     search_engine.update_obj_index(obj)
-                    refreshed_model_count += 1
-            if verbosity >= 2:
+                    local_refreshed_model_count += 1
+                    if verbosity >= 3:
+                        print u"Refreshed search entry for {model} {obj}.".format(
+                            model = model._meta.verbose_name,
+                            obj = obj,
+                        )
+                refreshed_model_count += local_refreshed_model_count
+                if verbosity == 2:
+                    print u"Refreshed {local_refreshed_model_count} {model} search entry(s) in {engine_slug!r} search engine.".format(
+                        model = model._meta.verbose_name,
+                        refreshed_model_count = refreshed_model_count,
+                        engine_slug = engine_slug,
+                    )
+            if verbosity == 1:
                 print u"Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
                     refreshed_model_count = refreshed_model_count,
                     engine_slug = engine_slug,
@@ -39,7 +52,7 @@ class Command(NoArgsCommand):
             stale_entry_count = stale_entries.count()
             if stale_entry_count > 0:
                 stale_entries.delete()
-            if verbosity >= 2:
+            if verbosity >= 1:
                 print u"Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
                     stale_entry_count = stale_entry_count,
                     engine_slug = engine_slug,

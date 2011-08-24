@@ -25,7 +25,7 @@ class Migration(SchemaMigration):
         db.send_create_signal('watson', ['SearchEntry'])
         
         # Install watson.
-        call_command("installwatson")
+        call_command("installwatson", verbosity=0)
 
 
     def backwards(self, orm):
