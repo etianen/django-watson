@@ -1,5 +1,7 @@
 """Search backends used by django-watson."""
 
+import re
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
@@ -14,7 +16,7 @@ def regex_from_search_text(search_text):
     words = search_text.split()
     return u"|".join(
         u"(\s{word}\s)|(^{word}\s)|(\s{word}$)|(^{word}$)".format(
-            word = word,
+            word = re.escape(word),
         )
         for word in words
     )

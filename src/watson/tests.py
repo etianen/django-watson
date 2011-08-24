@@ -168,7 +168,14 @@ class InternalsTest(SearchTestBase):
         call_command("buildwatson")
         # Make sure that we have four again (including duplicates).
         self.assertEqual(SearchEntry.objects.count(), 4)
-        
+    
+    def testSearchEmailParts(self):
+        with watson.context():
+            self.test11.content = "foo@bar.com"
+            self.test11.save()
+        self.assertEqual(watson.search("foo").count(), 1)
+        self.assertEqual(watson.search("bar.com").count(), 1)
+        self.assertEqual(watson.search("foo@bar.com").count(), 1)
         
 class SearchTest(SearchTestBase):
     
