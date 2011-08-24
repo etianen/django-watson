@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <title>Search results{% if query %} for &ldquo;{{query}}&rdquo;{% endif %}</title>
+    </head>
+    <body>
+        <h1>Search results{% if query %} for &ldquo;{{query}}&rdquo;{% endif %}</h1>
+        {% if searchentry_list %}
+            <ul>
+                {% for searchentry in searchentry_list %}
+                    <li>
+                        <article>
+                            <h1>
+                                {% if searchentry.url %}<a href="{{searchentry.url}}">{% endif %}
+                                {{searchentry.title}}
+                                {% if searchentry.url %}</a>{% endif %}
+                            </h1>
+                            {% if searchentry.description %}
+                                <p>{{searchentry.description}}</p>
+                            {% endif %}
+                        </article>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p><em>There are no results to display.</em></p>
+        {% endif %}
+    </body>
+</html>
