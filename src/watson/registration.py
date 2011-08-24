@@ -227,7 +227,7 @@ class SearchEngine(object):
         """Checks whether the given model is registered with this search engine."""
         return model in self._registered_models
 
-    def register(self, model, adapter_cls=SearchAdapter, live_filter=None, fields=None, exclude=None, store=None):
+    def register(self, model, adapter_cls=SearchAdapter, **field_overrides):
         """
         Registers the given model with this search engine.
         
@@ -240,19 +240,8 @@ class SearchEngine(object):
                 model = model,
             ))
         # Perform any customization.
-        field_overrides = dict(
-            (field_name, field_value)
-            for field_name, field_value
-            in (
-                ("live_filter", live_filter),
-                ("fields", fields),
-                ("exclude", exclude),
-                ("store", store),
-            )
-            if field_value is not None
-        )
         if field_overrides:
-            adapter_cls = type(adapter_cls.__name__ + "Custom", (adapter_cls,), field_overrides)
+            adapter_cls = type("Custom" + adapter_cls.__name__, (adapter_cls,), field_overrides)
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[model] = adapter_obj
