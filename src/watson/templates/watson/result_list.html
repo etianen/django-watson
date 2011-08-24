@@ -7,18 +7,18 @@
     </head>
     <body>
         <h1>Search results{% if query %} for &ldquo;{{query}}&rdquo;{% endif %}</h1>
-        {% if searchentry_list %}
+        {% if result_list %}
             <ul>
-                {% for searchentry in searchentry_list %}
+                {% for result in result_list %}
                     <li>
                         <article>
                             <h1>
-                                {% if searchentry.url %}<a href="{{searchentry.url}}">{% endif %}
-                                {{searchentry.title}}
-                                {% if searchentry.url %}</a>{% endif %}
+                                {% if result.url %}<a href="{{result.url}}">{% endif %}
+                                {{result.title}}
+                                {% if result.url %}</a>{% endif %}
                             </h1>
-                            {% if searchentry.description %}
-                                <p>{{searchentry.description}}</p>
+                            {% if result.description %}
+                                <p>{{result.description}}</p>
                             {% endif %}
                         </article>
                     </li>
