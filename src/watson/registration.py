@@ -11,7 +11,8 @@ from django.core.signals import request_started, request_finished
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Model
+from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
 from django.utils.importlib import import_module
@@ -39,7 +40,7 @@ class SearchAdapter(object):
     live_filter = False
     
     # Use to specify the fields that should be included in the seach.
-    fields = None
+    fields = ()
     
     # Use to exclude fields from the search.
     exclude = ()
@@ -95,10 +96,7 @@ class SearchAdapter(object):
     def get_content(self, obj):
         """Returns the search content for the given obj."""
         # Get the field names to look up.
-        if self.fields is None:
-            field_names = (field.name for field in self.model._meta.fields if isinstance(field, (models.CharField, models.TextField)))
-        else:
-            field_names = self.fields
+        field_names = self.fields or (field.name for field in self.model._meta.fields if isinstance(field, (models.CharField, models.TextField)))
         # Exclude named fields.
         field_names = (field_name for field_name in field_names if field_name not in self.exclude)
         # Create the text.
@@ -376,23 +374,54 @@ class SearchEngine(object):
         
     # Searching.
     
-    def search(self, search_text, models=None, exclude=None):
+    def search(self, search_text, models=(), exclude=()):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         queryset = SearchEntry.objects.filter(
             engine_slug = self._engine_slug,
         )
-        # Add in a model limiter.
-        allowed_models = models or self.get_registered_models()
-        if exclude:
-            allowed_models = [model for model in allowed_models if not model in exclude]
-        # Perform any live filters.
-        live_subqueries = []
-        for model in allowed_models:
-            content_type = ContentType.objects.get_for_model(model)
+        # Process the allowed models.
+        allowed_models = {}
+        for model in models or self.get_registered_models():
+            # Process the specified model.
+            if isinstance(model, type) and issubclass(model, Model):
+                allowed_models.setdefault(model, None)
+            elif isinstance(model, QuerySet):
+                sub_queryset = model
+                model = model.model
+                existing_queryset = allowed_models.get(model) or model._default_manager.all()
+                allowed_models[model] = existing_queryset | sub_queryset
+            else:
+                raise TypeError("Included models should be a model class or a queryset, not {model!r}".format(
+                    model = model,
+                ))
+            # Add in the live filter if applicable.
             adapter = self.get_adapter(model)
             if adapter.live_filter:
-                needs_live_subquery = True
-                live_pks = model._default_manager.all().values_list("pk", flat=True)
+                existing_queryset = allowed_models.get(model) or model._default_manager.all()
+                allowed_models[model] = existing_queryset | model._default_manager.all()
+        # Process the excluded models.
+        for model in exclude:
+            if isinstance(model, type) and issubclass(model, Model):
+                allowed_models.pop(model, None)
+            elif isinstance(model, QuerySet):
+                sub_queryset = model
+                model = model.model
+                existing_queryset = allowed_models.get(model) or model._default_manager.all()
+                allowed_models[model] = existing_queryset & sub_queryset
+            else:
+                raise TypeError("Excluded models should be a model class or a queryset, not {model!r}".format(
+                    model = model,
+                ))
+        # Perform any live filters.
+        live_subqueries = []
+        for model, sub_queryset in allowed_models.iteritems():
+            content_type = ContentType.objects.get_for_model(model)
+            if sub_queryset is None:
+                live_subquery = Q(
+                    content_type = content_type,
+                )
+            else:
+                live_pks = sub_queryset.values_list("pk", flat=True)
                 if has_int_pk(model):
                     # We can do this as an in-database join.
                     live_subquery = Q(
@@ -405,10 +434,6 @@ class SearchEngine(object):
                         content_type = content_type,
                         object_id__in = [unicode(pk) for pk in live_pks],
                     )
-            else:
-                live_subquery = Q(
-                    content_type = content_type,
-                )
             live_subqueries.append(live_subquery)
         live_subquery = reduce(operator.or_, live_subqueries)
         queryset = queryset.filter(live_subquery)
@@ -422,7 +447,7 @@ class SearchEngine(object):
         modified queryset.
         """
         # If the queryset is a model, get all of them.
-        if issubclass(queryset, models.Model):
+        if isinstance(queryset, type) and issubclass(queryset, models.Model):
             queryset = queryset._default_manager.all()
         # Do the filter.
         queryset = get_backend().do_filter(queryset, search_text)

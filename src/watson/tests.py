@@ -198,6 +198,16 @@ class SearchTest(SearchTestBase):
         self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get no models.
         self.assertEqual(watson.search("11", models=(TestModel2,)).count(), 0)
+    
+    def testLimitedModelQueryset(self):
+        # Test a search that should get all models.
+        self.assertEqual(watson.search("tItle Content Description", models=(TestModel1.objects.filter(title__icontains="title"),)).count(), 2)
+        # Test a search that should get one model.
+        exact_search = watson.search("11", models=(TestModel1.objects.filter(title__icontains="11"),))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].title, "title model1 11")
+        # Test a search that should get no models.
+        self.assertEqual(watson.search("11", models=(TestModel2.objects.filter(title__icontains="foobar"),)).count(), 0)
         
     def testExcludedModelList(self):
         # Test a search that should get all models.
@@ -215,6 +225,10 @@ class SearchTest(SearchTestBase):
             self.assertEqual(watson.filter(model, "title model1").count(), 2)
         # Test can find a specific one.
         obj = watson.filter(TestModel1, "12").get()
+        self.assertTrue(isinstance(obj, TestModel1))
+        self.assertEqual(obj.title, "title model1 12")
+        # Test can do filter on a queryset.
+        obj = watson.filter(TestModel1.objects.filter(title__icontains="title"), "12").get()
         self.assertTrue(isinstance(obj, TestModel1))
         self.assertEqual(obj.title, "title model1 12")
         
