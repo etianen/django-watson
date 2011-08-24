@@ -394,10 +394,10 @@ class SearchEngine(object):
         )
         # Process the allowed models.
         allowed_models = {}
-        def combine_queryset(model, sub_queryset, combinator):
+        def combine_queryset(model, sub_queryset, default_queryset, combinator):
             existing_queryset = allowed_models.get(model)
             if existing_queryset is None:
-                existing_queryset = model._default_manager.all()
+                existing_queryset = default_queryset
             new_queryset = combinator(existing_queryset, sub_queryset)
             allowed_models[model] = new_queryset
         for model in models or self.get_registered_models():
@@ -408,9 +408,9 @@ class SearchEngine(object):
                 if live_queryset is None:
                     allowed_models.setdefault(model, None)
                 else:
-                    combine_queryset(model, live_queryset, operator.or_)
+                    combine_queryset(model, live_queryset, model._default_manager.none(), operator.or_)
             elif isinstance(model, QuerySet):
-                combine_queryset(model.model, model, operator.or_)
+                combine_queryset(model.model, model, model.model._default_manager.none(), operator.or_)
             else:
                 raise TypeError("Included models should be a model class or a queryset, not {model!r}".format(
                     model = model,
@@ -420,7 +420,7 @@ class SearchEngine(object):
             if isinstance(model, type) and issubclass(model, Model):
                 allowed_models.pop(model, None)
             elif isinstance(model, QuerySet):
-                combine_queryset(model.model, model, operator.and_)
+                combine_queryset(model.model, model, model.model._default_manager.all(), operator.and_)
             else:
                 raise TypeError("Excluded models should be a model class or a queryset, not {model!r}".format(
                     model = model,
