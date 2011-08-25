@@ -1,6 +1,6 @@
 """Adapters for registering models with django-watson."""
 
-import operator, re
+import re
 from threading import local
 from contextlib import contextmanager
 from functools import wraps
@@ -387,69 +387,57 @@ class SearchEngine(object):
         
     # Searching.
     
+    def _create_model_filter(self, models):
+        """Creates a filter for the given model/queryset list."""
+        filters = Q()
+        for model in models:
+            filter = Q()
+            # Process querysets.
+            if isinstance(model, QuerySet):
+                sub_queryset = model
+                model = model.model
+                queryset = sub_queryset.values_list("pk", flat=True)
+                if has_int_pk(model):
+                    filter &= Q(
+                        object_id_int__in = queryset,
+                    )
+                else:
+                    filter &= Q(
+                        object_id__in = list(queryset),
+                    )
+            # Add the model to the filter.
+            content_type = ContentType.objects.get_for_model(model)
+            filter &= Q(
+                content_type = content_type,
+            )
+            # Combine with the other filters.
+            filters |= filter
+        return filters
+    
+    def _get_included_models(self, models):
+        """Returns an iterable of models and querysets that should be included in the search query."""
+        for model in models or self.get_registered_models():
+            if isinstance(model, QuerySet):
+                yield model
+            else:
+                adaptor = self.get_adapter(model)
+                queryset = adaptor.get_live_queryset()
+                if queryset is None:
+                    yield model
+                else:
+                    yield queryset
+    
     def search(self, search_text, models=(), exclude=()):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         queryset = SearchEntry.objects.filter(
             engine_slug = self._engine_slug,
         )
         # Process the allowed models.
-        allowed_models = {}
-        def combine_queryset(model, sub_queryset, default_queryset, combinator):
-            existing_queryset = allowed_models.get(model)
-            if existing_queryset is None:
-                existing_queryset = default_queryset
-            new_queryset = combinator(existing_queryset, sub_queryset)
-            allowed_models[model] = new_queryset
-        for model in models or self.get_registered_models():
-            # Process the specified model.
-            if isinstance(model, type) and issubclass(model, Model):
-                adapter = self.get_adapter(model)
-                live_queryset = adapter.get_live_queryset()
-                if live_queryset is None:
-                    allowed_models.setdefault(model, None)
-                else:
-                    combine_queryset(model, live_queryset, model._default_manager.none(), operator.or_)
-            elif isinstance(model, QuerySet):
-                combine_queryset(model.model, model, model.model._default_manager.none(), operator.or_)
-            else:
-                raise TypeError("Included models should be a model class or a queryset, not {model!r}".format(
-                    model = model,
-                ))
-        # Process the excluded models.
-        for model in exclude:
-            if isinstance(model, type) and issubclass(model, Model):
-                allowed_models.pop(model, None)
-            elif isinstance(model, QuerySet):
-                combine_queryset(model.model, model, model.model._default_manager.all(), operator.and_)
-            else:
-                raise TypeError("Excluded models should be a model class or a queryset, not {model!r}".format(
-                    model = model,
-                ))
-        # Perform any live filters.
-        live_subqueries = []
-        for model, sub_queryset in allowed_models.iteritems():
-            content_type = ContentType.objects.get_for_model(model)
-            if sub_queryset is None:
-                live_subquery = Q(
-                    content_type = content_type,
-                )
-            else:
-                live_pks = sub_queryset.values_list("pk", flat=True)
-                if has_int_pk(model):
-                    # We can do this as an in-database join.
-                    live_subquery = Q(
-                        content_type = content_type,
-                        object_id_int__in = live_pks,
-                    )
-                else:
-                    # We have to do this as two separate queries. Oh well.
-                    live_subquery = Q(
-                        content_type = content_type,
-                        object_id__in = [unicode(pk) for pk in live_pks],
-                    )
-            live_subqueries.append(live_subquery)
-        live_subquery = reduce(operator.or_, live_subqueries)
-        queryset = queryset.filter(live_subquery)
+        queryset = queryset.filter(
+            self._create_model_filter(self._get_included_models(models))
+        ).exclude(
+            self._create_model_filter(exclude)
+        )
         # Perform the backend-specific full text match.
         queryset = get_backend().do_search(queryset, search_text)
         return queryset

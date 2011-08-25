@@ -88,6 +88,11 @@ class SearchTestBase(TestCase):
 
     @watson.update_index
     def setUp(self):
+        # Remove all the current registered models.
+        self.registered_models = watson.get_registered_models()
+        for model in self.registered_models:
+            watson.unregister(model)
+        # Register the test models.
         watson.register(TestModel1, live_filter=self.live_filter)
         watson.register(TestModel2, exclude=("id",), live_filter=self.live_filter)
         # Create some test models.
@@ -113,6 +118,10 @@ class SearchTestBase(TestCase):
         )
 
     def tearDown(self):
+        # Re-register the old registered models.
+        for model in self.registered_models:
+            watson.register(model)
+        # Unregister the test models.
         watson.unregister(TestModel1)
         watson.unregister(TestModel2)
         # Delete the test models.
@@ -201,23 +210,41 @@ class SearchTest(SearchTestBase):
     
     def testLimitedModelQueryset(self):
         # Test a search that should get all models.
-        self.assertEqual(watson.search("tItle Content Description", models=(TestModel1.objects.filter(title__icontains="title"),)).count(), 2)
+        self.assertEqual(watson.search("tItle Content Description", models=(TestModel1.objects.all(),)).count(), 2)
+        # Test a search that should get one model.
+        exact_search = watson.search("11", models=(TestModel1.objects.all(),))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get one model.
         exact_search = watson.search("11", models=(TestModel1.objects.filter(title__icontains="11"),))
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].title, "title model1 11")
         # Test a search that should get no models.
-        self.assertEqual(watson.search("11", models=(TestModel2.objects.filter(title__icontains="foobar"),)).count(), 0)
+        self.assertEqual(watson.search("11", models=(TestModel2.objects.all(),)).count(), 0)
         
     def testExcludedModelList(self):
         # Test a search that should get all models.
-        self.assertEqual(watson.search("tItle Content Description", exclude=(TestModel2,)).count(), 2)
+        self.assertEqual(watson.search("tItle Content Description", exclude=(TestModel1,)).count(), 2)
         # Test a search that should get one model.
-        exact_search = watson.search("11", exclude=(TestModel2,))
+        exact_search = watson.search("21", exclude=(TestModel1,))
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].title, "title model1 11")
+        self.assertEqual(exact_search[0].title, "title model2 21")
         # Test a search that should get no models.
         self.assertEqual(watson.search("11", exclude=(TestModel1,)).count(), 0)
+    
+    def testExcludedModelQueryset(self):
+        # Test a search that should get all models.
+        self.assertEqual(watson.search("tItle Content Description", exclude=(TestModel1.objects.all(),)).count(), 2)
+        # Test a search that should get one model.
+        exact_search = watson.search("21", exclude=(TestModel1.objects.all(),))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].title, "title model2 21")
+        # Test a search that should get one model.
+        exact_search = watson.search("21", exclude=(TestModel1.objects.all(),TestModel2.objects.filter(title__icontains="22",)))
+        self.assertEqual(len(exact_search), 1)
+        self.assertEqual(exact_search[0].title, "title model2 21")
+        # Test a search that should get no models.
+        self.assertEqual(watson.search("11", exclude=(TestModel1.objects.all(),)).count(), 0)
     
     def testFilter(self):
         for model in (TestModel1, TestModel2):
