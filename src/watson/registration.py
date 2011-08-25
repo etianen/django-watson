@@ -153,6 +153,7 @@ class SearchContextManager(local):
     
     def __init__(self):
         """Initializes the search context."""
+        self._request_active = False
         self._stack = []
         # Connect to the signalling framework.
         request_started.connect(self.request_started_receiver)
@@ -207,11 +208,14 @@ class SearchContextManager(local):
         
     def request_started_receiver(self, **kwargs):
         """Signal handler for when the request starts."""
+        self._request_active = True
         self.begin()
         
     def request_finished_receiver(self, **kwargs):
         """Signal handler for when the request ends."""
-        self.end()
+        if self._request_active:
+            self._request_active = False
+            self.end()
         # Check for any hanging search contexts.
         if self.is_active():
             raise SearchContextError(
