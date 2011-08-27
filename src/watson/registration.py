@@ -406,9 +406,17 @@ class SearchEngine(object):
                         object_id_int__in = queryset,
                     )
                 else:
-                    filter &= Q(
-                        object_id__in = list(queryset),
-                    )
+                    live_ids = list(queryset)
+                    if live_ids:
+                        filter &= Q(
+                            object_id__in = live_ids,
+                        )
+                    else:
+                        # HACK: There is a bug in Django (https://code.djangoproject.com/ticket/15145) that messes up __in queries when the iterable is empty.
+                        # This bit of nonsense ensures that this aspect of the query will be impossible to fulfill.
+                        filter &= Q(
+                            content_type = ContentType.objects.get_for_model(model).id + 1,
+                        )
             # Add the model to the filter.
             content_type = ContentType.objects.get_for_model(model)
             filter &= Q(
