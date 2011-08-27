@@ -184,6 +184,19 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("bar.com").count(), 1)
         self.assertEqual(watson.search("foo@bar.com").count(), 1)
         
+    def testFilter(self):
+        for model in (TestModel1, TestModel2):
+            # Test can find all.
+            self.assertEqual(watson.filter(model, "TITLE").count(), 2)
+        # Test can find a specific one.
+        obj = watson.filter(TestModel1, "INSTANCE12").get()
+        self.assertTrue(isinstance(obj, TestModel1))
+        self.assertEqual(obj.title, "title model1 instance12")
+        # Test can do filter on a queryset.
+        obj = watson.filter(TestModel1.objects.filter(title__icontains="TITLE"), "INSTANCE12").get()
+        self.assertTrue(isinstance(obj, TestModel1))
+        self.assertEqual(obj.title, "title model1 instance12")
+        
         
 class SearchTest(SearchTestBase):
     
@@ -300,19 +313,6 @@ class SearchTest(SearchTestBase):
             title__icontains = "MODEL2",
         ),)).count(), 0)
         
-    def testFilter(self):
-        for model in (TestModel1, TestModel2):
-            # Test can find all.
-            self.assertEqual(watson.filter(model, "TITLE").count(), 2)
-        # Test can find a specific one.
-        obj = watson.filter(TestModel1, "INSTANCE12").get()
-        self.assertTrue(isinstance(obj, TestModel1))
-        self.assertEqual(obj.title, "title model1 instance12")
-        # Test can do filter on a queryset.
-        obj = watson.filter(TestModel1.objects.filter(title__icontains="TITLE"), "INSTANCE12").get()
-        self.assertTrue(isinstance(obj, TestModel1))
-        self.assertEqual(obj.title, "title model1 instance12")
-        
         
 class LiveFilterSearchTest(SearchTest):
     
@@ -329,3 +329,11 @@ class LiveFilterSearchTest(SearchTest):
             self.test21.save()
         # This should return 4, but two of them are unpublished.
         self.assertEqual(watson.search("tItle Content Description").count(), 2)
+        
+    def testCanOverridePublication(self):
+        # Unpublish two objects.
+        with watson.context():
+            self.test11.is_published = False
+            self.test11.save()
+        # This should still return 4, since we're overriding the publication.
+        self.assertEqual(watson.search("tItle Content Description", models=(TestModel2, TestModel1._base_manager.all(),)).count(), 4)
