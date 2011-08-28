@@ -98,12 +98,12 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text search."""
         return queryset.extra(
             select = {
-                "rank": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
+                "watson_relevance": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
             },
             select_params = (search_text,),
             where = ("search_tsv @@ plainto_tsquery(%s)",),
             params = (search_text,),
-            order_by = ("-rank",),
+            order_by = ("-watson_relevance",),
         )
         
     def do_filter(self, queryset, search_text):
@@ -116,7 +116,7 @@ class PostgresSearchBackend(SearchBackend):
             ref_name = "object_id"
         return queryset.extra(
             select = {
-                "rank": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
+                "watson_relevance": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
             },
             select_params = (search_text,),
             tables = ("watson_searchentry",),
@@ -130,7 +130,7 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.content_type_id = %s"
             ),
             params = (search_text, content_type.id),
-            order_by = ("-rank",),
+            order_by = ("-watson_relevance",),
         )
         
         

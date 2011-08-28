@@ -205,7 +205,7 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("TITLE").count(), 4)
         self.assertEqual(watson.search("CONTENT").count(), 4)
         self.assertEqual(watson.search("DESCRIPTION").count(), 4)
-        self.assertEqual(watson.search("TITLE CONTENT_DESCRIPTION").count(), 4)
+        self.assertEqual(watson.search("TITLE CONTENT DESCRIPTION").count(), 4)
         # Test a search that should get two models.
         self.assertEqual(watson.search("MODEL1").count(), 2)
         self.assertEqual(watson.search("MODEL2").count(), 2)
@@ -312,6 +312,20 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("INSTANCE21", exclude=(TestModel2.objects.filter(
             title__icontains = "MODEL2",
         ),)).count(), 0)
+        
+    def testKitchenSink(self):
+        """For sanity, let's just test everything together in one giant search of doom!"""
+        results = self.assertEqual(watson.search(
+            "INSTANCE11",
+            models = (
+                TestModel1.objects.filter(title__icontains="INSTANCE11"),
+                TestModel2.objects.filter(title__icontains="TITLE"),
+            ),
+            exclude = (
+                TestModel1.objects.filter(title__icontains="MODEL2"),
+                TestModel2.objects.filter(title__icontains="MODEL1"),
+            )
+        ).get().title, "title model1 instance11")
         
         
 class LiveFilterSearchTest(SearchTest):
