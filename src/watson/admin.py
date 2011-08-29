@@ -28,7 +28,7 @@ class WatsonSearchChangeList(ChangeList):
         return self.model_admin.search_engine.filter(qs, self.query, ranking=False)
 
 
-class WatsonSearchAdmin(admin.ModelAdmin):
+class SearchAdmin(admin.ModelAdmin):
 
     """
     A ModelAdmin subclass that provides full-text search integration.
@@ -41,11 +41,11 @@ class WatsonSearchAdmin(admin.ModelAdmin):
     
     def __init__(self, *args, **kwargs):
         """Initializes the search admin."""
-        super(WatsonSearchAdmin, self).__init__(*args, **kwargs)
+        super(SearchAdmin, self).__init__(*args, **kwargs)
         # Check that the search fields are valid.
         for search_field in self.search_fields or ():
             if search_field[0] in ("^", "@", "="):
-                raise ValueError("WatsonSearchAdmin does not support search fields prefixed with '^', '=' or '@'")
+                raise ValueError("SearchAdmin does not support search fields prefixed with '^', '=' or '@'")
         # Register with the search engine.
         self.register_model_with_watson()
     
