@@ -493,7 +493,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertContains(response, "instance12")
         self.assertContains(response, "instance21")
         self.assertContains(response, "instance22")
-        self.assertTemplateUsed(response, "watson/result_list.html")
+        self.assertTemplateUsed(response, "watson/search_results.html")
         # Test a search that should find one thing.
         response = self.client.get("/simple/?q=instance11")
         self.assertContains(response, "instance11")
@@ -514,7 +514,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertContains(response, "instance12")
         self.assertContains(response, "instance21")
         self.assertContains(response, "instance22")
-        self.assertTemplateUsed(response, "watson/result_list.html")
+        self.assertTemplateUsed(response, "watson/search_results.html")
         # Test a search that should find nothing.
         response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")

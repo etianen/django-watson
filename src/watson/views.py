@@ -6,7 +6,7 @@ import watson
 from watson.models import SearchEntry
 
 
-def search(request, query_param="q", template_name="watson/result_list.html", empty_query_redirect=None):
+def search(request, query_param="q", template_name="watson/search_results.html", empty_query_redirect=None):
     """Renders a list of matching search entries."""
     query = request.GET.get(query_param, u"")
     # Check for blank queries.
