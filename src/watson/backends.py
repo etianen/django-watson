@@ -162,6 +162,16 @@ class PostgresSearchBackend(SearchBackend):
             order_by = ("-watson_rank",),
         )
         
+
+def escape_mysql_boolean_query(search_text):
+    return u" ".join(
+        u'+"{word}"'.format(
+            word = word,
+        )
+        for word in search_text.split()
+    )
+    
+
         
 class MySQLSearchBackend(SearchBackend):
 
@@ -186,17 +196,17 @@ class MySQLSearchBackend(SearchBackend):
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
-            where = ("MATCH (title, description, content) AGAINST (%s)",),
-            params = (search_text,),
+            where = ("MATCH (title, description, content) AGAINST (%s IN BOOLEAN MODE)",),
+            params = (escape_mysql_boolean_query(search_text),),
         )
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "MATCH (title, description, content) AGAINST (%s)",
+                "watson_rank": "MATCH (title, description, content) AGAINST (%s IN BOOLEAN MODE)",
             },
-            select_params = (search_text,),
+            select_params = (escape_mysql_boolean_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
@@ -212,24 +222,24 @@ class MySQLSearchBackend(SearchBackend):
             tables = ("watson_searchentry",),
             where = (
                 "watson_searchentry.engine_slug = %s",
-                "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s) IN BOOLEAN MODE",
+                "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)",
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
                     pk_name = connection.ops.quote_name(model._meta.pk.name),
                 ),
-                "watson_searchentry.content_type_id = %s"
+                "watson_searchentry.content_type_id = %s",
             ),
-            params = (engine_slug, search_text, content_type.id),
+            params = (engine_slug, escape_mysql_boolean_query(search_text), content_type.id),
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s) IN BOOLEAN MODE",
+                "watson_rank": "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)",
             },
-            select_params = (search_text,),
+            select_params = (escape_mysql_boolean_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
