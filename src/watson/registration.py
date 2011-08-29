@@ -452,10 +452,10 @@ class SearchEngine(object):
         )
         # Perform the backend-specific full text match.
         backend = get_backend()
-        queryset = backend.do_search(queryset, search_text)
+        queryset = backend.do_search(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
-            queryset = backend.do_search_ranking(queryset, search_text)
+            queryset = backend.do_search_ranking(self._engine_slug, queryset, search_text)
         # Return the complete queryset.
         return queryset
         
@@ -469,10 +469,10 @@ class SearchEngine(object):
             queryset = queryset._default_manager.all()
         # Perform the backend-specific full text match.
         backend = get_backend()
-        queryset = backend.do_filter(queryset, search_text)
+        queryset = backend.do_filter(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
-            queryset = backend.do_filter_ranking(queryset, search_text)
+            queryset = backend.do_filter_ranking(self._engine_slug, queryset, search_text)
         # Return the complete queryset.
         return queryset
 

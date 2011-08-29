@@ -1,6 +1,6 @@
 """Search backends used by django-watson."""
 
-import re, operator
+import re
 
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
@@ -28,7 +28,7 @@ class SearchBackend(object):
     
     supports_ranking = False
     
-    def do_search(self, queryset, search_text):
+    def do_search(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         word_queries = []
         for word in search_text.split():
@@ -39,7 +39,7 @@ class SearchBackend(object):
             word_query
         )
         
-    def do_search_ranking(self, queryset, search_text):
+    def do_search_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
         return queryset.extra(
             select = {
@@ -47,18 +47,17 @@ class SearchBackend(object):
             },
         )
         
-    def do_filter(self, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        word_queries = []
+        word_query = Q(searchentry_set__engine_slug=engine_slug)
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_queries.append(Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex))
-        word_query = reduce(operator.and_, word_queries)
+            word_query &= (Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex))
         return queryset.filter(
             word_query
         )
         
-    def do_filter_ranking(self, queryset, search_text):
+    def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
         return queryset.extra(
             select = {
@@ -114,14 +113,14 @@ class PostgresSearchBackend(SearchBackend):
     
     supports_ranking = True
         
-    def do_search(self, queryset, search_text):
+    def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
             where = ("search_tsv @@ plainto_tsquery(%s)",),
             params = (search_text,),
         )
         
-    def do_search_ranking(self, queryset, search_text):
+    def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
@@ -131,7 +130,7 @@ class PostgresSearchBackend(SearchBackend):
             order_by = ("-watson_rank",),
         )
         
-    def do_filter(self, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
@@ -142,6 +141,7 @@ class PostgresSearchBackend(SearchBackend):
         return queryset.extra(
             tables = ("watson_searchentry",),
             where = (
+                "watson_searchentry.engine_slug = %s",
                 "watson_searchentry.search_tsv @@ plainto_tsquery(%s)",
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
@@ -150,10 +150,10 @@ class PostgresSearchBackend(SearchBackend):
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
-            params = (search_text, content_type.id),
+            params = (engine_slug, search_text, content_type.id),
         )
         
-    def do_filter_ranking(self, queryset, search_text):
+    def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {

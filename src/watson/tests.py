@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.conf.urls.defaults import *
 
 import watson
-from watson.registration import RegistrationError, get_backend
+from watson.registration import RegistrationError, get_backend, SearchEngine
 from watson.models import SearchEntry
 
 
@@ -85,6 +85,9 @@ class RegistrationTest(TestCase):
         self.assertRaises(RegistrationError, lambda: isinstance(watson.get_adapter(TestModel1)))
 
 
+complex_registration_search_engine = SearchEngine("restricted")
+
+
 class SearchTestBase(TestCase):
 
     live_filter = False
@@ -98,6 +101,8 @@ class SearchTestBase(TestCase):
         # Register the test models.
         watson.register(TestModel1, live_filter=self.live_filter)
         watson.register(TestModel2, exclude=("id",), live_filter=self.live_filter)
+        complex_registration_search_engine.register(TestModel1, exclude=("content", "description",), store=("is_published",))
+        complex_registration_search_engine.register(TestModel2, fields=("title",))
         # Create some test models.
         self.test11 = TestModel1.objects.create(
             title = "title model1 instance11",
@@ -127,6 +132,8 @@ class SearchTestBase(TestCase):
         # Unregister the test models.
         watson.unregister(TestModel1)
         watson.unregister(TestModel2)
+        complex_registration_search_engine.unregister(TestModel1)
+        complex_registration_search_engine.unregister(TestModel2)
         # Delete the test models.
         TestModel1.objects.all().delete()
         TestModel2.objects.all().delete()
@@ -141,7 +148,7 @@ class SearchTestBase(TestCase):
 class InternalsTest(SearchTestBase):
 
     def testSearchEntriesCreated(self):
-        self.assertEqual(SearchEntry.objects.count(), 4)
+        self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 4)
         
     def testBuildWatsonCommand(self):
         # This update won't take affect, because no search context is active.
@@ -168,16 +175,17 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("foo").count(), 0)
         
     def testFixesDuplicateSearchEntries(self):
+        search_entries = SearchEntry.objects.filter(engine_slug="default")
         # Duplicate a couple of search entries.
-        for search_entry in SearchEntry.objects.all()[:2]:
+        for search_entry in search_entries.all()[:2]:
             search_entry.id = None
             search_entry.save()
         # Make sure that we have six (including duplicates).
-        self.assertEqual(SearchEntry.objects.count(), 6)
+        self.assertEqual(search_entries.all().count(), 6)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
         # Make sure that we have four again (including duplicates).
-        self.assertEqual(SearchEntry.objects.count(), 4)
+        self.assertEqual(search_entries.all().count(), 4)
     
     def testSearchEmailParts(self):
         with watson.context():
@@ -391,6 +399,28 @@ class RankingTest(SearchTestBase):
             [entry.title for entry in watson.filter(TestModel1, "FOO")],
             [u"title model1 instance11 foo bar foo", u"title model1 instance12 foo bar"]
         )
+
+
+class ComplexRegistrationTest(SearchTestBase):
+
+    def testMetaStored(self):
+        self.assertEqual(complex_registration_search_engine.search("instance11")[0].meta["is_published"], True)
+        
+    def testMetaNotStored(self):
+        self.assertRaises(KeyError, lambda: complex_registration_search_engine.search("instance21")[0].meta["is_published"])
+        
+    def testFieldsExcludedOnSearch(self):
+        self.assertEqual(complex_registration_search_engine.search("TITLE").count(), 4)
+        self.assertEqual(complex_registration_search_engine.search("CONTENT").count(), 0)
+        self.assertEqual(complex_registration_search_engine.search("DESCRIPTION").count(), 0)
+        
+    def testFieldsExcludedOnFilter(self):
+        self.assertEqual(complex_registration_search_engine.filter(TestModel1, "TITLE").count(), 2)
+        self.assertEqual(complex_registration_search_engine.filter(TestModel1, "CONTENT").count(), 0)
+        self.assertEqual(complex_registration_search_engine.filter(TestModel1, "DESCRIPTION").count(), 0)
+        self.assertEqual(complex_registration_search_engine.filter(TestModel2, "TITLE").count(), 2)
+        self.assertEqual(complex_registration_search_engine.filter(TestModel2, "CONTENT").count(), 0)
+        self.assertEqual(complex_registration_search_engine.filter(TestModel2, "DESCRIPTION").count(), 0)
 
 
 urlpatterns = patterns("watson.views",
