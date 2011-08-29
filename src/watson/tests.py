@@ -13,6 +13,7 @@ from django.test import TestCase
 from django.core.management import call_command
 from django.conf.urls.defaults import *
 from django.contrib import admin
+from django.contrib.auth.models import User
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
@@ -433,7 +434,7 @@ class ComplexRegistrationTest(SearchTestBase):
 
 class TestModel1Admin(WatsonSearchAdmin):
 
-    search_fields = ("=title", "description", "content",)
+    search_fields = ("title", "description", "content",)
     
     list_display = ("title",)
     
@@ -453,6 +454,37 @@ urlpatterns = patterns("watson.views",
     url("^admin/", include(admin.site.urls)),
 
 )
+
+
+class AdminIntegrationTest(SearchTestBase):
+
+    urls = "watson.tests"
+    
+    def setUp(self):
+        super(AdminIntegrationTest, self).setUp()
+        self.user = User(
+            username = "foo",
+            is_staff = True,
+            is_superuser = True,
+        )
+        self.user.set_password("bar")
+        self.user.save()
+    
+    def testAdminIntegration(self):
+        self.client.login(username="foo", password="bar")
+        # Test a search for all the instances.
+        response = self.client.get("/admin/auth/testmodel1/?q=title content description")
+        self.assertContains(response, "instance11")
+        self.assertContains(response, "instance12")
+        # Test a search for half the instances.
+        response = self.client.get("/admin/auth/testmodel1/?q=instance11")
+        self.assertContains(response, "instance11")
+        self.assertNotContains(response, "instance12")
+        
+    def tearDown(self):
+        super(AdminIntegrationTest, self).tearDown()
+        self.user.delete()
+        del self.user
         
         
 class SiteSearchTest(SearchTestBase):
