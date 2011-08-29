@@ -1,33 +1,20 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
+from django.core.management import call_command
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def forwards(self, orm):
+        "Write your forwards methods here."
         
-        # Adding model 'SearchEntry'
-        db.create_table('watson_searchentry', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('engine_slug', self.gf('django.db.models.fields.CharField')(max_length=200, db_index=True)),
-            ('content_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['contenttypes.ContentType'])),
-            ('object_id', self.gf('django.db.models.fields.TextField')()),
-            ('object_id_int', self.gf('django.db.models.fields.IntegerField')(db_index=True, null=True, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=1000)),
-            ('description', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('content', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('url', self.gf('django.db.models.fields.CharField')(max_length=1000, blank=True)),
-            ('meta_encoded', self.gf('django.db.models.fields.TextField')()),
-        ))
-        db.send_create_signal('watson', ['SearchEntry'])
+        call_command("installwatson", verbosity=0)
 
 
     def backwards(self, orm):
-        
-        # Deleting model 'SearchEntry'
-        db.delete_table('watson_searchentry')
+        "Write your backwards methods here."
 
 
     models = {

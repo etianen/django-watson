@@ -106,7 +106,7 @@ class PostgresSearchBackend(SearchBackend):
                 return new;
             end
             $$ LANGUAGE plpgsql;
-            CREATE TRIGGER watson_searchitem_trigger BEFORE INSERT OR UPDATE
+            CREATE TRIGGER watson_searchentry_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
         """)
     
@@ -163,6 +163,77 @@ class PostgresSearchBackend(SearchBackend):
         )
         
         
+class MySQLSearchBackend(SearchBackend):
+
+    def do_install(self):
+        """Generates the PostgreSQL specific SQL code to install django-watson."""
+        cursor = connection.cursor()
+        # Drop all foreign keys on the watson_searchentry table.
+        cursor.execute("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'watson_searchentry' AND CONSTRAINT_TYPE = 'FOREIGN KEY'")
+        for constraint_name, in cursor.fetchall():
+            cursor.execute("ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
+                constraint_name = constraint_name,
+            ))
+        # Change the storage engine to MyISAM.
+        cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
+        # Change the collaction to a case-insensitive one.
+        cursor.execute("ALTER TABLE watson_searchentry CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci")
+        # Add the full text index.
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
+    
+    supports_ranking = True
+    
+    def do_search(self, engine_slug, queryset, search_text):
+        """Performs the full text search."""
+        return queryset.extra(
+            where = ("MATCH (title, description, content) AGAINST (%s)",),
+            params = (search_text,),
+        )
+        
+    def do_search_ranking(self, engine_slug, queryset, search_text):
+        """Performs full text ranking."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "MATCH (title, description, content) AGAINST (%s)",
+            },
+            select_params = (search_text,),
+            order_by = ("-watson_rank",),
+        )
+        
+    def do_filter(self, engine_slug, queryset, search_text):
+        """Performs the full text filter."""
+        model = queryset.model
+        content_type = ContentType.objects.get_for_model(model)
+        if has_int_pk(model):
+            ref_name = "object_id_int"
+        else:
+            ref_name = "object_id"
+        return queryset.extra(
+            tables = ("watson_searchentry",),
+            where = (
+                "watson_searchentry.engine_slug = %s",
+                "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s) IN BOOLEAN MODE",
+                "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
+                    ref_name = ref_name,
+                    table_name = connection.ops.quote_name(model._meta.db_table),
+                    pk_name = connection.ops.quote_name(model._meta.pk.name),
+                ),
+                "watson_searchentry.content_type_id = %s"
+            ),
+            params = (engine_slug, search_text, content_type.id),
+        )
+        
+    def do_filter_ranking(self, engine_slug, queryset, search_text):
+        """Performs the full text ranking."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s) IN BOOLEAN MODE",
+            },
+            select_params = (search_text,),
+            order_by = ("-watson_rank",),
+        )
+        
+        
 class AdaptiveSearchBackend(SearchBackend):
 
     """
@@ -175,5 +246,6 @@ class AdaptiveSearchBackend(SearchBackend):
         database_engine = settings.DATABASES["default"]["ENGINE"]
         if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
             return PostgresSearchBackend()
-        else:
-            return SearchBackend()
+        if database_engine.endswith("mysql"):
+            return MySQLSearchBackend()
+        return SearchBackend()
