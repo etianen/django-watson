@@ -30,11 +30,10 @@ class SearchBackend(object):
     
     def do_search(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        word_queries = []
+        word_query = Q()
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_queries.append(Q(title__iregex=regex) | Q(content__iregex=regex) | Q(content__iregex=regex))
-        word_query = reduce(operator.and_, word_queries)
+            word_query &= (Q(title__iregex=regex) | Q(description__iregex=regex) | Q(content__iregex=regex))
         return queryset.filter(
             word_query
         )
@@ -43,7 +42,7 @@ class SearchBackend(object):
         """Ranks the given queryset according to the relevance of the given search text."""
         return queryset.extra(
             select = {
-                "watson_relevance": "1",
+                "watson_rank": "1",
             },
         )
         
@@ -52,7 +51,7 @@ class SearchBackend(object):
         word_query = Q(searchentry_set__engine_slug=engine_slug)
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_query &= (Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__content__iregex=regex) | Q(searchentry_set__content__iregex=regex))
+            word_query &= (Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__description__iregex=regex) | Q(searchentry_set__content__iregex=regex))
         return queryset.filter(
             word_query
         )
