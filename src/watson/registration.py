@@ -33,12 +33,6 @@ class SearchAdapter(object):
 
     """An adapter for performing a full-text search on a model."""
     
-    # If set to True, then the search engine will only return
-    # models accessible from the default manager of the model. This allows
-    # you to limit the results according to some custom publication of your
-    # own, at the expense of some search performance.
-    live_filter = False
-    
     # Use to specify the fields that should be included in the seach.
     fields = ()
     
@@ -123,12 +117,8 @@ class SearchAdapter(object):
         """
         Returns the queryset of objects that should be considered live.
         
-        If this returns none, then all objects should be considered live, which is more efficient.
-        The default implementation looks at the value of self.live_filter, and if True, returns
-        the contents of the default object manager.
+        If this returns None, then all objects should be considered live, which is more efficient.
         """
-        if self.live_filter:
-            return self.model._default_manager.all()
         return None
 
 
@@ -267,6 +257,11 @@ class SearchEngine(object):
         If the given model is already registered with this search engine, a
         RegistrationError will be raised.
         """
+        # Add in custom live filters.
+        if isinstance(model, QuerySet):
+            live_queryset = model
+            model = model.model
+            field_overrides["get_live_queryset"] = lambda self_: live_queryset.all()
         # Check for existing registration.
         if self.is_registered(model):
             raise RegistrationError("{model!r} is already registered with this search engine".format(
@@ -301,6 +296,10 @@ class SearchEngine(object):
         If the given model is not registered with this search engine, a RegistrationError
         will be raised.
         """
+        # Add in custom live filters.
+        if isinstance(model, QuerySet):
+            model = model.model
+        # Check for registration.
         if not self.is_registered(model):
             raise RegistrationError("{model!r} is not registered with this search engine".format(
                 model = model,

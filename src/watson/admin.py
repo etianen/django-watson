@@ -39,8 +39,6 @@ class WatsonSearchAdmin(admin.ModelAdmin):
     
     search_engine = admin_search_engine
     
-    live_filter = False
-    
     def __init__(self, *args, **kwargs):
         """Initializes the search admin."""
         super(WatsonSearchAdmin, self).__init__(*args, **kwargs)
@@ -53,7 +51,7 @@ class WatsonSearchAdmin(admin.ModelAdmin):
     
     def register_model_with_watson(self):
         """Registers this admin class' model with django-watson."""
-        self.search_engine.register(self.model, fields=self.search_fields, live_filter=self.live_filter)
+        self.search_engine.register(self.model, fields=self.search_fields)
     
     def get_changelist(self, request, **kwargs):
         """Returns the ChangeList class for use on the changelist page."""

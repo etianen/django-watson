@@ -21,15 +21,7 @@ from watson.models import SearchEntry
 from watson.admin import WatsonSearchAdmin
 
 
-class TestModelManager(models.Manager):
-
-    def get_query_set(self):
-        return super(TestModelManager, self).get_query_set().filter(is_published=True)
-
-
 class TestModelBase(models.Model):
-
-    objects = TestModelManager()
 
     title = models.CharField(
         max_length = 200,
@@ -99,7 +91,9 @@ complex_registration_search_engine = SearchEngine("restricted")
 
 class SearchTestBase(TestCase):
 
-    live_filter = False
+    model1 = TestModel1
+    
+    model2 = TestModel2
 
     @watson.update_index
     def setUp(self):
@@ -108,8 +102,8 @@ class SearchTestBase(TestCase):
         for model in self.registered_models:
             watson.unregister(model)
         # Register the test models.
-        watson.register(TestModel1, live_filter=self.live_filter)
-        watson.register(TestModel2, exclude=("id",), live_filter=self.live_filter)
+        watson.register(self.model1)
+        watson.register(self.model2, exclude=("id",))
         complex_registration_search_engine.register(TestModel1, exclude=("content", "description",), store=("is_published",))
         complex_registration_search_engine.register(TestModel2, fields=("title",))
         # Create some test models.
@@ -139,8 +133,8 @@ class SearchTestBase(TestCase):
         for model in self.registered_models:
             watson.register(model)
         # Unregister the test models.
-        watson.unregister(TestModel1)
-        watson.unregister(TestModel2)
+        watson.unregister(self.model1)
+        watson.unregister(self.model2)
         complex_registration_search_engine.unregister(TestModel1)
         complex_registration_search_engine.unregister(TestModel2)
         # Delete the test models.
@@ -350,7 +344,9 @@ class SearchTest(SearchTestBase):
         
 class LiveFilterSearchTest(SearchTest):
     
-    live_filter = True
+    model1 = TestModel1.objects.filter(is_published=True)
+    
+    model2 = TestModel2.objects.filter(is_published=True)
     
     def testUnpublishedModelsNotFound(self):
         # Make sure that there are four to find!
