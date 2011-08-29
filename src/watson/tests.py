@@ -152,27 +152,27 @@ class InternalsTest(SearchTestBase):
         
     def testBuildWatsonCommand(self):
         # This update won't take affect, because no search context is active.
-        self.test11.title = "foo"
+        self.test11.title = "fooo"
         self.test11.save()
         # Test that no update has happened.
-        self.assertEqual(watson.search("foo").count(), 0)
+        self.assertEqual(watson.search("fooo").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
         # Test that the update is now applies.
-        self.assertEqual(watson.search("foo").count(), 1)
+        self.assertEqual(watson.search("fooo").count(), 1)
         
     def testUpdateSearchIndex(self):
         # Update a model and make sure that the search results match.
         with watson.context():
-            self.test11.title = "foo"
+            self.test11.title = "fooo"
             self.test11.save()
         # Test a search that should get one model.
-        exact_search = watson.search("foo")
+        exact_search = watson.search("fooo")
         self.assertEqual(len(exact_search), 1)
-        self.assertEqual(exact_search[0].title, "foo")
+        self.assertEqual(exact_search[0].title, "fooo")
         # Delete a model and make sure that the search results match.
         self.test11.delete()
-        self.assertEqual(watson.search("foo").count(), 0)
+        self.assertEqual(watson.search("fooo").count(), 0)
         
     def testFixesDuplicateSearchEntries(self):
         search_entries = SearchEntry.objects.filter(engine_slug="default")
@@ -189,11 +189,11 @@ class InternalsTest(SearchTestBase):
     
     def testSearchEmailParts(self):
         with watson.context():
-            self.test11.content = "foo@bar.com"
+            self.test11.content = "fooo@baar.com"
             self.test11.save()
-        self.assertEqual(watson.search("foo").count(), 1)
-        self.assertEqual(watson.search("bar.com").count(), 1)
-        self.assertEqual(watson.search("foo@bar.com").count(), 1)
+        self.assertEqual(watson.search("fooo").count(), 1)
+        self.assertEqual(watson.search("baar.com").count(), 1)
+        self.assertEqual(watson.search("fooo@baar.com").count(), 1)
         
     def testFilter(self):
         for model in (TestModel1, TestModel2):
@@ -228,8 +228,8 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("TITLE INSTANCE11").count(), 1)
         self.assertEqual(watson.search("TITLE INSTANCE21").count(), 1)
         # Test a search that should get zero models.
-        self.assertEqual(watson.search("FOO").count(), 0)
-        self.assertEqual(watson.search("FOO INSTANCE11").count(), 0)
+        self.assertEqual(watson.search("FOOO").count(), 0)
+        self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
         self.assertEqual(watson.search("MODEL2 INSTANCE11").count(), 0)
     
     def testLimitedModelList(self):
@@ -299,7 +299,7 @@ class SearchTest(SearchTestBase):
         
     def testExcludedModelQuerySet(self):
         # Test a search that should get all models.
-        self.assertEqual(watson.search("TITLE", exclude=(TestModel1.objects.filter(title__icontains="FOO"), TestModel2.objects.filter(title__icontains="FOO"),)).count(), 4)
+        self.assertEqual(watson.search("TITLE", exclude=(TestModel1.objects.filter(title__icontains="FOOO"), TestModel2.objects.filter(title__icontains="FOOO"),)).count(), 4)
         # Test a search that should get two models.
         self.assertEqual(watson.search("MODEL1", exclude=(TestModel1.objects.filter(
             title__icontains = "INSTANCE21",
@@ -369,9 +369,9 @@ class RankingTest(SearchTestBase):
     @watson.update_index
     def setUp(self):
         super(RankingTest, self).setUp()
-        self.test11.title += " foo bar foo"
+        self.test11.title += " fooo baar fooo"
         self.test11.save()
-        self.test12.title += " foo bar"
+        self.test12.title += " fooo baar"
         self.test12.save()
 
     def testRankingParamPresentOnSearch(self):
@@ -389,15 +389,15 @@ class RankingTest(SearchTestBase):
     @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithSearch(self):
         self.assertEqual(
-            [entry.title for entry in watson.search("FOO")],
-            [u"title model1 instance11 foo bar foo", u"title model1 instance12 foo bar"]
+            [entry.title for entry in watson.search("FOOO")],
+            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12 fooo baar"]
         )
             
     @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithFilter(self):
         self.assertEqual(
-            [entry.title for entry in watson.filter(TestModel1, "FOO")],
-            [u"title model1 instance11 foo bar foo", u"title model1 instance12 foo bar"]
+            [entry.title for entry in watson.filter(TestModel1, "FOOO")],
+            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12 fooo baar"]
         )
 
 
@@ -428,7 +428,7 @@ urlpatterns = patterns("watson.views",
     url("^simple/$", "search", name="search_simple"),
     
     url("^custom/$", "search", name="search_custom", kwargs={
-        "query_param": "foo",
+        "query_param": "fooo",
         "empty_query_redirect": "/simple/",
     }),
 
@@ -454,7 +454,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertNotContains(response, "instance21")
         self.assertNotContains(response, "instance22")
         # Test a search that should find nothing.
-        response = self.client.get("/simple/?q=foo")
+        response = self.client.get("/simple/?q=fooo")
         self.assertNotContains(response, "instance11")
         self.assertNotContains(response, "instance12")
         self.assertNotContains(response, "instance21")
@@ -462,12 +462,12 @@ class SiteSearchTest(SearchTestBase):
         
     def testSiteSearchCustom(self):
         # Test a search than should find everything.
-        response = self.client.get("/custom/?foo=title")
+        response = self.client.get("/custom/?fooo=title")
         self.assertContains(response, "instance11")
         self.assertContains(response, "instance12")
         self.assertContains(response, "instance21")
         self.assertContains(response, "instance22")
         self.assertTemplateUsed(response, "watson/result_list.html")
         # Test a search that should find nothing.
-        response = self.client.get("/custom/?q=foo")
+        response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")
