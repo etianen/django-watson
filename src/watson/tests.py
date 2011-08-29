@@ -12,10 +12,12 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf.urls.defaults import *
+from django.contrib import admin
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
 from watson.models import SearchEntry
+from watson.admin import WatsonSearchAdmin
 
 
 class TestModelManager(models.Manager):
@@ -429,6 +431,16 @@ class ComplexRegistrationTest(SearchTestBase):
         self.assertEqual(complex_registration_search_engine.filter(TestModel2, "DESCRIPTION").count(), 0)
 
 
+class TestModel1Admin(WatsonSearchAdmin):
+
+    search_fields = ("=title", "description", "content",)
+    
+    list_display = ("title",)
+    
+    
+admin.site.register(TestModel1, TestModel1Admin)
+
+
 urlpatterns = patterns("watson.views",
 
     url("^simple/$", "search", name="search_simple"),
@@ -437,6 +449,8 @@ urlpatterns = patterns("watson.views",
         "query_param": "fooo",
         "empty_query_redirect": "/simple/",
     }),
+    
+    url("^admin/", include(admin.site.urls)),
 
 )
         
