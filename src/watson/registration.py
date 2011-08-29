@@ -81,15 +81,36 @@ class SearchAdapter(object):
         return content
     
     def get_title(self, obj):
-        """Returns the search title for the given obj."""
+        """
+        Returns the title of this search result. This is given high priority in search result ranking.
+        
+        You can access the title of the search entry as `entry.title` in your search results.
+        
+        The default implementation returns `unicode(obj)`.
+        """
         return unicode(obj)
         
     def get_description(self, obj):
-        """Returns the search description for the given obj."""
+        """
+        Returns the description of this search result. This is given medium priority in search result ranking.
+        
+        You can access the description of the search entry as `entry.description` in your search results. Since
+        this should contains a short description of the search entry, it's excellent for providing a summary
+        in your search results.
+        
+        The default implementation returns `u""`.
+        """
         return u""
         
     def get_content(self, obj):
-        """Returns the search content for the given obj."""
+        """
+        Returns the content of this search result. This is given low priority in search result ranking.
+        
+        You can access the content of the search entry as `entry.content` in your search results, although
+        this field generally contains a big mess of search data so is less suitable for frontend display.
+        
+        The default implementation returns all the registered fields in your model joined together.
+        """
         # Get the field names to look up.
         field_names = self.fields or (field.name for field in self.model._meta.fields if isinstance(field, (models.CharField, models.TextField)))
         # Exclude named fields.

@@ -7,9 +7,9 @@
     </head>
     <body>
         <h1>Search results{% if query %} for &ldquo;{{query}}&rdquo;{% endif %}</h1>
-        {% if result_list %}
+        {% if search_results %}
             <ul>
-                {% for result in result_list %}
+                {% for result in search_results %}
                     <li>
                         <article>
                             <h1>
