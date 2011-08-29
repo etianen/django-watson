@@ -18,7 +18,6 @@ from django.contrib.auth.models import User
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
 from watson.models import SearchEntry
-from watson.admin import SearchAdmin
 
 
 class TestModelBase(models.Model):
@@ -428,7 +427,7 @@ class ComplexRegistrationTest(SearchTestBase):
         self.assertEqual(complex_registration_search_engine.filter(TestModel2, "DESCRIPTION").count(), 0)
 
 
-class TestModel1Admin(SearchAdmin):
+class TestModel1Admin(watson.SearchAdmin):
 
     search_fields = ("title", "description", "content",)
     
