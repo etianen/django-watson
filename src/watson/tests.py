@@ -1,11 +1,13 @@
 """Tests for django-watson."""
 
+from unittest import skipIf, skipUnless
+
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 
 import watson
-from watson.registration import RegistrationError
+from watson.registration import RegistrationError, get_backend
 from watson.models import SearchEntry
 
 
@@ -355,6 +357,14 @@ class LiveFilterSearchTest(SearchTest):
         
 class RankingTest(SearchTestBase):
 
+    @watson.update_index
+    def setUp(self):
+        super(RankingTest, self).setUp()
+        self.test11.title += " foo bar foo"
+        self.test11.save()
+        self.test12.title += " foo bar"
+        self.test12.save()
+
     def testRankingParamPresentOnSearch(self):
         self.assertGreater(watson.search("TITLE")[0].watson_rank, 0)
         
@@ -366,3 +376,17 @@ class RankingTest(SearchTestBase):
         
     def testRankingParamAbsentOnFilter(self):
         self.assertRaises(AttributeError, lambda: watson.filter(TestModel1, "TITLE", ranking=False)[0].watson_rank)
+    
+    @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
+    def testRankingWithSearch(self):
+        self.assertEqual(
+            [entry.title for entry in watson.search("FOO")],
+            [u"u'title model1 instance11 foo bar foo", u"u'title model1 instance12 foo bar"]
+        )
+            
+    @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
+    def testRankingWithFilter(self):
+        self.assertEqual(
+            [entry.title for entry in watson.filter(TestModel1, "FOO")],
+            [u"u'title model1 instance11 foo bar foo", u"u'title model1 instance12 foo bar"]
+        )
