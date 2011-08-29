@@ -10,6 +10,7 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "Write your forwards methods here."
         
+        # Needs to be run in a separate migration to avoid borking MySQL.
         call_command("installwatson", verbosity=0)
 
 
