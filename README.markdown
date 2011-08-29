@@ -1,19 +1,49 @@
 django-watson
 =============
 
-**django-watson** is a multi-table search application for Django, using native database search engines.
+**django-watson** is a multi-table full text search application for Django, using native database search engines.
 
-This is currently an experimental pre-release. More documentation will be available as the project matures.
+It provides fast, relevant search results, and is extremely easy to install and use.
+
+
+Features
+--------
+
+* Search across multiple models, or just the one.
+* Return results ordered by relevance.
+* No additional third-party modules or services need to be installed.
+* Fast and scaleable enough for most use-cases.
+
+
+Documentation
+-------------
+
+Please read the [Getting Started][] guide for more information.
+
+[Getting Started]: http://wiki.github.com/etianen/django-watson/getting-started
+    "Getting started with django-watson"
+    
+Download instructions, bug reporting and links to full documentation can be
+found at the [main project website][].
+
+[main project website]: http://github.com/etianen/django-watson
+    "django-watson on GitHub"
+
+You can keep up to date with the latest announcements by joining the
+[django-watson discussion group][].
+
+[django-watson discussion group]: http://groups.google.com/group/django-watson
+    "django-watson Google Group"
 
     
 More information
 ----------------
 
-The django-reversion project was developed by Dave Hall. You can get the code
-from the [django-reversion project site][].
+The django-watson project was developed by Dave Hall. You can get the code
+from the [django-watson project site][].
 
-[django-reversion project site]: http://github.com/etianen/django-reversion
-    "django-reversion on GitHub"
+[django-watson project site]: http://github.com/etianen/django-watson
+    "django-watson on GitHub"
     
 Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
 find him on the Internet in a number of different places:
