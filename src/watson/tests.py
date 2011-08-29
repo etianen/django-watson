@@ -5,6 +5,7 @@ from unittest import skipIf, skipUnless
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
+from django.conf.urls.defaults import *
 
 import watson
 from watson.registration import RegistrationError, get_backend
@@ -381,12 +382,62 @@ class RankingTest(SearchTestBase):
     def testRankingWithSearch(self):
         self.assertEqual(
             [entry.title for entry in watson.search("FOO")],
-            [u"u'title model1 instance11 foo bar foo", u"u'title model1 instance12 foo bar"]
+            [u"title model1 instance11 foo bar foo", u"title model1 instance12 foo bar"]
         )
             
     @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithFilter(self):
         self.assertEqual(
             [entry.title for entry in watson.filter(TestModel1, "FOO")],
-            [u"u'title model1 instance11 foo bar foo", u"u'title model1 instance12 foo bar"]
+            [u"title model1 instance11 foo bar foo", u"title model1 instance12 foo bar"]
         )
+
+
+urlpatterns = patterns("watson.views",
+
+    url("^simple/$", "search", name="search_simple"),
+    
+    url("^custom/$", "search", name="search_custom", kwargs={
+        "query_param": "foo",
+        "empty_query_redirect": "/simple/",
+    }),
+
+)
+        
+        
+class SiteSearchTest(SearchTestBase):
+
+    urls = "watson.tests"
+    
+    def testSiteSearch(self):
+        # Test a search than should find everything.
+        response = self.client.get("/simple/?q=title")
+        self.assertContains(response, "instance11")
+        self.assertContains(response, "instance12")
+        self.assertContains(response, "instance21")
+        self.assertContains(response, "instance22")
+        self.assertTemplateUsed(response, "watson/result_list.html")
+        # Test a search that should find one thing.
+        response = self.client.get("/simple/?q=instance11")
+        self.assertContains(response, "instance11")
+        self.assertNotContains(response, "instance12")
+        self.assertNotContains(response, "instance21")
+        self.assertNotContains(response, "instance22")
+        # Test a search that should find nothing.
+        response = self.client.get("/simple/?q=foo")
+        self.assertNotContains(response, "instance11")
+        self.assertNotContains(response, "instance12")
+        self.assertNotContains(response, "instance21")
+        self.assertNotContains(response, "instance22")
+        
+    def testSiteSearchCustom(self):
+        # Test a search than should find everything.
+        response = self.client.get("/custom/?foo=title")
+        self.assertContains(response, "instance11")
+        self.assertContains(response, "instance12")
+        self.assertContains(response, "instance21")
+        self.assertContains(response, "instance22")
+        self.assertTemplateUsed(response, "watson/result_list.html")
+        # Test a search that should find nothing.
+        response = self.client.get("/custom/?q=foo")
+        self.assertRedirects(response, "/simple/")
