@@ -20,7 +20,7 @@ Documentation
 
 Please read the [Getting Started][] guide for more information.
 
-[Getting Started]: http://wiki.github.com/etianen/django-watson/getting-started
+[Getting Started]: https://github.com/etianen/django-watson/wiki
     "Getting started with django-watson"
     
 Download instructions, bug reporting and links to full documentation can be
