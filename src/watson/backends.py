@@ -25,7 +25,9 @@ class SearchBackend(object):
     def do_install(self):
         """Generates the SQL needed to install django-watson."""
         pass
-        
+    
+    supports_ranking = False
+    
     def do_search(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         word_queries = []
@@ -37,6 +39,14 @@ class SearchBackend(object):
             word_query
         )
         
+    def do_search_ranking(self, queryset, search_text):
+        """Ranks the given queryset according to the relevance of the given search text."""
+        return queryset.extra(
+            select = {
+                "watson_relevance": "1",
+            },
+        )
+        
     def do_filter(self, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         word_queries = []
@@ -46,6 +56,14 @@ class SearchBackend(object):
         word_query = reduce(operator.and_, word_queries)
         return queryset.filter(
             word_query
+        )
+        
+    def do_filter_ranking(self, queryset, search_text):
+        """Ranks the given queryset according to the relevance of the given search text."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "1",
+            },
         )
     
     def save_search_entry(self, search_entry, obj, adapter):
@@ -93,17 +111,24 @@ class PostgresSearchBackend(SearchBackend):
             CREATE TRIGGER watson_searchitem_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
         """)
+    
+    supports_ranking = True
         
     def do_search(self, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
-            select = {
-                "watson_relevance": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
-            },
-            select_params = (search_text,),
             where = ("search_tsv @@ plainto_tsquery(%s)",),
             params = (search_text,),
-            order_by = ("-watson_relevance",),
+        )
+        
+    def do_search_ranking(self, queryset, search_text):
+        """Performs full text ranking."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
+            },
+            select_params = (search_text,),
+            order_by = ("-watson_rank",),
         )
         
     def do_filter(self, queryset, search_text):
@@ -115,10 +140,6 @@ class PostgresSearchBackend(SearchBackend):
         else:
             ref_name = "object_id"
         return queryset.extra(
-            select = {
-                "watson_relevance": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
-            },
-            select_params = (search_text,),
             tables = ("watson_searchentry",),
             where = (
                 "watson_searchentry.search_tsv @@ plainto_tsquery(%s)",
@@ -130,7 +151,16 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.content_type_id = %s"
             ),
             params = (search_text, content_type.id),
-            order_by = ("-watson_relevance",),
+        )
+        
+    def do_filter_ranking(self, queryset, search_text):
+        """Performs the full text ranking."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
+            },
+            select_params = (search_text,),
+            order_by = ("-watson_rank",),
         )
         
         
