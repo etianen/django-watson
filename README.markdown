@@ -1,18 +1,18 @@
 django-watson
 =============
 
-**django-watson** is a multi-table full text search application for Django, using native database search engines.
+**django-watson** is a fast multi-model full-text search plugin for Django.
 
-It provides fast, relevant search results, and is extremely easy to install and use.
+It is easy to install and use, and provides high quality search results. 
 
 
 Features
 --------
 
-* Search across multiple models, or just the one.
-* Return results ordered by relevance.
-* No additional third-party modules or services need to be installed.
-* Fast and scaleable enough for most use-cases.
+* Search across multiple models.
+* Order results by by relevance.
+* No need to install additional third-party modules or services.
+* Fast and scaleable enough for most use cases.
 
 
 Documentation
