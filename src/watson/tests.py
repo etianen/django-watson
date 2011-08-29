@@ -351,3 +351,18 @@ class LiveFilterSearchTest(SearchTest):
             self.test11.save()
         # This should still return 4, since we're overriding the publication.
         self.assertEqual(watson.search("tItle Content Description", models=(TestModel2, TestModel1._base_manager.all(),)).count(), 4)
+        
+        
+class RankingTest(SearchTestBase):
+
+    def testRankingParamPresentOnSearch(self):
+        self.assertGreater(watson.search("TITLE")[0].watson_rank, 0)
+        
+    def testRankingParamPresentOnFilter(self):
+        self.assertGreater(watson.filter(TestModel1, "TITLE")[0].watson_rank, 0)
+        
+    def testRankingParamAbsentOnSearch(self):
+        self.assertRaises(AttributeError, lambda: watson.search("TITLE", ranking=False)[0].watson_rank)
+        
+    def testRankingParamAbsentOnFilter(self):
+        self.assertRaises(AttributeError, lambda: watson.filter(TestModel1, "TITLE", ranking=False)[0].watson_rank)
