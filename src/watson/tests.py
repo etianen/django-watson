@@ -1,4 +1,10 @@
-"""Tests for django-watson."""
+"""
+Tests for django-watson.
+
+Fun fact: The MySQL full text search engine does not support indexing of words
+that are 3 letters or fewer. Thus, the standard metasyntactic variables in
+these tests have been amended to 'fooo' and 'baar'. Ho hum.
+"""
 
 from unittest import skipIf, skipUnless
 
