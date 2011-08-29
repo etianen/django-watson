@@ -166,7 +166,7 @@ class PostgresSearchBackend(SearchBackend):
 def escape_mysql_boolean_query(search_text):
     return u" ".join(
         u'+"{word}"'.format(
-            word = word,
+            word = word.replace(u'"', u''),
         )
         for word in search_text.split()
     )
@@ -188,8 +188,11 @@ class MySQLSearchBackend(SearchBackend):
         cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
         # Change the collaction to a case-insensitive one.
         cursor.execute("ALTER TABLE watson_searchentry CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci")
-        # Add the full text index.
+        # Add the full text indexex.
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title ON watson_searchentry (title)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_description ON watson_searchentry (description)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_content ON watson_searchentry (content)")
     
     supports_ranking = True
     
@@ -202,11 +205,16 @@ class MySQLSearchBackend(SearchBackend):
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
+        search_text = escape_mysql_boolean_query(search_text)
         return queryset.extra(
             select = {
-                "watson_rank": "MATCH (title, description, content) AGAINST (%s IN BOOLEAN MODE)",
+                "watson_rank": """
+                    ((MATCH (title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
+                    ((MATCH (description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
+                    ((MATCH (content) AGAINST (%s IN BOOLEAN MODE)) * 1)
+                """,
             },
-            select_params = (escape_mysql_boolean_query(search_text),),
+            select_params = (search_text, search_text, search_text,),
             order_by = ("-watson_rank",),
         )
         
@@ -235,11 +243,16 @@ class MySQLSearchBackend(SearchBackend):
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
+        search_text = escape_mysql_boolean_query(search_text)
         return queryset.extra(
             select = {
-                "watson_rank": "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)",
+                "watson_rank": """
+                    ((MATCH (watson_searchentry.title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
+                    ((MATCH (watson_searchentry.description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
+                    ((MATCH (watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)) * 1)
+                """,
             },
-            select_params = (escape_mysql_boolean_query(search_text),),
+            select_params = (search_text, search_text, search_text,),
             order_by = ("-watson_rank",),
         )
         

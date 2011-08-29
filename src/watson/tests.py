@@ -375,7 +375,7 @@ class RankingTest(SearchTestBase):
         super(RankingTest, self).setUp()
         self.test11.title += " fooo baar fooo"
         self.test11.save()
-        self.test12.title += " fooo baar"
+        self.test12.content += " fooo baar"
         self.test12.save()
 
     def testRankingParamPresentOnSearch(self):
@@ -394,14 +394,14 @@ class RankingTest(SearchTestBase):
     def testRankingWithSearch(self):
         self.assertEqual(
             [entry.title for entry in watson.search("FOOO")],
-            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12 fooo baar"]
+            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12"]
         )
             
     @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithFilter(self):
         self.assertEqual(
             [entry.title for entry in watson.filter(TestModel1, "FOOO")],
-            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12 fooo baar"]
+            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12"]
         )
 
 
