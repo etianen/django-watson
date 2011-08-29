@@ -102,7 +102,7 @@ class SearchAdapter(object):
         field_names = (field_name for field_name in field_names if field_name not in self.exclude)
         # Create the text.
         return self.prepare_content(u" ".join(
-            self._resolve_field(obj, field_name)
+            unicode(self._resolve_field(obj, field_name))
             for field_name in field_names
         ))
     
