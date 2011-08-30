@@ -12,6 +12,7 @@ from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf.urls.defaults import *
+from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
 
@@ -444,6 +445,10 @@ urlpatterns = patterns("watson.views",
     url("^custom/$", "search", name="search_custom", kwargs={
         "query_param": "fooo",
         "empty_query_redirect": "/simple/",
+        "extra_context": {
+            "foo": "bar",
+            "foo2": lambda: "bar2",
+        }
     }),
     
     url("^admin/", include(admin.site.urls)),
@@ -465,6 +470,7 @@ class AdminIntegrationTest(SearchTestBase):
         self.user.set_password("bar")
         self.user.save()
     
+    @skipUnless("django.contrib.admin" in settings.INSTALLED_APPS, "Django admin site not installed")
     def testAdminIntegration(self):
         self.client.login(username="foo", password="bar")
         # Test a search for all the instances.
@@ -515,6 +521,9 @@ class SiteSearchTest(SearchTestBase):
         self.assertContains(response, "instance21")
         self.assertContains(response, "instance22")
         self.assertTemplateUsed(response, "watson/search_results.html")
+        # Test that the extra context is included.
+        self.assertEqual(response.context["foo"], "bar")
+        self.assertEqual(response.context["foo2"], "bar2")
         # Test a search that should find nothing.
         response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")
