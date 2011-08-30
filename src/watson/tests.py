@@ -15,6 +15,7 @@ from django.conf.urls.defaults import *
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django import template
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
@@ -448,7 +449,8 @@ urlpatterns = patterns("watson.views",
         "extra_context": {
             "foo": "bar",
             "foo2": lambda: "bar2",
-        }
+        },
+        "paginate_by": 10,
     }),
     
     url("^admin/", include(admin.site.urls)),
@@ -524,6 +526,23 @@ class SiteSearchTest(SearchTestBase):
         # Test that the extra context is included.
         self.assertEqual(response.context["foo"], "bar")
         self.assertEqual(response.context["foo2"], "bar2")
+        # Test that pagination is included.
+        self.assertEqual(response.context["paginator"].num_pages, 1)
+        self.assertEqual(response.context["page_obj"].number, 1)
+        self.assertEqual(response.context["search_results"], response.context["page_obj"].object_list)
+        # Test a request for an empty page.
+        try:
+            response = self.client.get("/custom/?fooo=title&page=10")
+        except template.TemplateDoesNotExist as ex:
+            # No 404 template defined.
+            self.assertEqual(ex.message, "404.html")
+        else:
+            self.assertEqual(response.status_code, 404)
+        # Test a requet for the last page.
+        response = self.client.get("/custom/?fooo=title&page=last")
+        self.assertEqual(response.context["paginator"].num_pages, 1)
+        self.assertEqual(response.context["page_obj"].number, 1)
+        self.assertEqual(response.context["search_results"], response.context["page_obj"].object_list)
         # Test a search that should find nothing.
         response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")
