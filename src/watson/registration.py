@@ -167,8 +167,8 @@ class SearchContextManager(local):
         self._request_active = False
         self._stack = []
         # Connect to the signalling framework.
-        request_started.connect(self.request_started_receiver)
-        request_finished.connect(self.request_finished_receiver)
+        request_started.connect(self._request_started_receiver)
+        request_finished.connect(self._request_finished_receiver)
     
     def is_active(self):
         """Checks that this search context is active."""
@@ -217,12 +217,12 @@ class SearchContextManager(local):
     
     # Signalling hooks.
         
-    def request_started_receiver(self, **kwargs):
+    def _request_started_receiver(self, **kwargs):
         """Signal handler for when the request starts."""
         self._request_active = True
         self.start()
         
-    def request_finished_receiver(self, **kwargs):
+    def _request_finished_receiver(self, **kwargs):
         """Signal handler for when the request ends."""
         if self._request_active:
             self._request_active = False
