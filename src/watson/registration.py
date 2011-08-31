@@ -33,7 +33,7 @@ class SearchAdapter(object):
 
     """An adapter for performing a full-text search on a model."""
     
-    # Use to specify the fields that should be included in the seach.
+    # Use to specify the fields that should be included in the search.
     fields = ()
     
     # Use to exclude fields from the search.
