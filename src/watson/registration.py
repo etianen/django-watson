@@ -179,7 +179,7 @@ class SearchContextManager(local):
         if not self.is_active():
             raise SearchContextError("The search context is not active.")
         
-    def begin(self):
+    def start(self):
         """Starts a level in the search context."""
         self._stack.append(set())
     
@@ -201,7 +201,7 @@ class SearchContextManager(local):
     @contextmanager
     def context(self):
         """Defines a search context for updating registered models."""
-        self.begin()
+        self.start()
         try:
             yield
         finally:
@@ -220,7 +220,7 @@ class SearchContextManager(local):
     def request_started_receiver(self, **kwargs):
         """Signal handler for when the request starts."""
         self._request_active = True
-        self.begin()
+        self.start()
         
     def request_finished_receiver(self, **kwargs):
         """Signal handler for when the request ends."""
