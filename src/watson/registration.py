@@ -185,8 +185,8 @@ class SearchContextManager(local):
     
     def add_to_context(self, engine, obj):
         """Adds an object to the current context, if active."""
-        if self.is_active():
-            self._stack[-1].add((engine, obj))
+        self._assert_active()
+        self._stack[-1].add((engine, obj))
     
     def end(self):
         """Ends a level in the search context."""
@@ -404,8 +404,9 @@ class SearchEngine(object):
             
     def _pre_delete_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been deleted."""
-        _, search_entries = self._get_entries_for_obj(instance)
-        search_entries.delete()
+        if self._search_context_manager.is_active():
+            _, search_entries = self._get_entries_for_obj(instance)
+            search_entries.delete()
         
     # Searching.
     
