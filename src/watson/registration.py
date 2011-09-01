@@ -305,8 +305,8 @@ class SearchEngine(object):
             model.searchentry_set = generic_relation
             generic_relation.contribute_to_class(model, "searchentry_set")
         # Connect to the signalling framework.
-        post_save.connect(self.post_save_receiver, model)
-        pre_delete.connect(self.pre_delete_receiver, model)
+        post_save.connect(self._post_save_receiver, model)
+        pre_delete.connect(self._pre_delete_receiver, model)
     
     def unregister(self, model):
         """
@@ -326,8 +326,8 @@ class SearchEngine(object):
         # Perform the unregistration.
         del self._registered_models[model]
         # Disconnect from the signalling framework.
-        post_save.disconnect(self.post_save_receiver, model)
-        pre_delete.connect(self.pre_delete_receiver, model)
+        post_save.disconnect(self._post_save_receiver, model)
+        pre_delete.connect(self._pre_delete_receiver, model)
         
     def get_registered_models(self):
         """Returns a sequence of models that have been registered with this search engine."""
@@ -397,12 +397,12 @@ class SearchEngine(object):
         
     # Signalling hooks.
             
-    def post_save_receiver(self, instance, **kwargs):
+    def _post_save_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been saved."""
         if self._search_context_manager.is_active():
             self._search_context_manager.add_to_context(self, instance)
             
-    def pre_delete_receiver(self, instance, **kwargs):
+    def _pre_delete_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been deleted."""
         _, search_entries = self._get_entries_for_obj(instance)
         search_entries.delete()
