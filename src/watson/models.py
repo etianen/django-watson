@@ -25,6 +25,7 @@ class SearchEntry(models.Model):
     engine_slug = models.CharField(
         max_length = 200,
         db_index = True,
+        default = "default",
     )
     
     content_type = models.ForeignKey(

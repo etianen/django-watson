@@ -7,7 +7,7 @@ Developed by Dave Hall.
 """
 
 from watson.admin import SearchAdmin
-from watson.registration import SearchAdapter, default_search_engine
+from watson.registration import SearchAdapter, default_search_engine, search_context_manager
 
 
 # The main search methods.
@@ -24,5 +24,5 @@ get_adapter = default_search_engine.get_adapter
 
 
 # Easy context management.
-context = default_search_engine.context
-update_index = default_search_engine.update_index
+context = search_context_manager.context
+update_index = search_context_manager.update_index

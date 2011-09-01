@@ -262,8 +262,6 @@ class SearchEngine(object):
         self._engine_slug = engine_slug
         # Store the search context.
         self._search_context_manager = search_context_manager
-        self.context = search_context_manager.context
-        self.update_index = search_context_manager.update_index
         # Store a reference to this engine.
         self.__class__._created_engines[engine_slug] = self
 
