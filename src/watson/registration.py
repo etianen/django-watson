@@ -181,39 +181,44 @@ class SearchContextManager(local):
         
     def start(self):
         """Starts a level in the search context."""
-        self._stack.append(set())
+        self._stack.append((set(), False))
     
     def add_to_context(self, engine, obj):
         """Adds an object to the current context, if active."""
         self._assert_active()
-        self._stack[-1].add((engine, obj))
+        objects, is_invalid = self._stack[-1]
+        objects.add((engine, obj))
+    
+    def invalidate(self):
+        """Marks this search context as broken, so should not be commited."""
+        self._assert_active()
+        objects, is_invalid = self._stack[-1]
+        self._stack[-1] = (objects, False)
+        
+    def is_invalid(self):
+        """Checks whether this search context is invalid."""
+        self._assert_active()
+        objects, is_invalid = self._stack[-1]
+        return is_invalid
     
     def end(self):
         """Ends a level in the search context."""
         self._assert_active()
         # Save all the models.
-        tasks = self._stack.pop()
-        for engine, obj in tasks:
-            engine.update_obj_index(obj)
+        tasks, is_invalid = self._stack.pop()
+        if not is_invalid:
+            for engine, obj in tasks:
+                engine.update_obj_index(obj)
     
     # Context management.
-    
-    @contextmanager
-    def context(self):
-        """Defines a search context for updating registered models."""
-        self.start()
-        try:
-            yield
-        finally:
-            self.end()
             
-    def update_index(self, func):
-        """Marks up a function that should be run in a search context."""
-        @wraps(func)
-        def do_update_index(*args, **kwargs):
-            with self.context():
-                return func(*args, **kwargs)
-        return do_update_index
+    def update_index(self):
+        """
+        Marks up a block of code as requiring the search indexes to be updated.
+        
+        The returned context manager can also be used as a decorator.
+        """
+        return SearchContext(self)
     
     # Signalling hooks.
         
@@ -233,6 +238,44 @@ class SearchContextManager(local):
                 "Request finished with an open search context. All calls to search_context_manager.begin() "
                 "should be balanced by a call to search_context_manager.end()."
             )
+            
+            
+class SearchContext(object):
+
+    """An individual context for a search index update."""
+
+    def __init__(self, context_manager):
+        """Initializes the search index context."""
+        self._context_manager = context_manager
+    
+    def __enter__(self):
+        """Enters a block of search index management."""
+        self._context_manager.start()
+        
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Leaves a block of search index management."""
+        try:
+            if exc_type is not None:
+                self._context_manager.invalidate()
+        finally:
+            self._context_manager.end()
+        
+    def __call__(self, func):
+        """Allows this search index context to be used as a decorator."""
+        @wraps(func)
+        def do_search_context(*args, **kwargs):
+            self.__enter__()
+            exception = False
+            try:
+                return func(*args, **kwargs)
+            except:
+                exception = True
+                if not self.__exit__(*sys.exc_info()):
+                    raise
+            finally:
+                if not exception:
+                    self.__exit__(None, None, None)
+        return do_search_context
         
             
 # The shared, thread-safe search context manager.

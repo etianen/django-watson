@@ -96,7 +96,7 @@ class SearchTestBase(TestCase):
     
     model2 = TestModel2
 
-    @watson.update_index
+    @watson.update_index()
     def setUp(self):
         # Remove all the current registered models.
         self.registered_models = watson.get_registered_models()
@@ -167,7 +167,7 @@ class InternalsTest(SearchTestBase):
         
     def testUpdateSearchIndex(self):
         # Update a model and make sure that the search results match.
-        with watson.context():
+        with watson.update_index():
             self.test11.title = "fooo"
             self.test11.save()
         # Test a search that should get one model.
@@ -192,7 +192,7 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(search_entries.all().count(), 4)
     
     def testSearchEmailParts(self):
-        with watson.context():
+        with watson.update_index():
             self.test11.content = "fooo@baar.com"
             self.test11.save()
         self.assertEqual(watson.search("fooo").count(), 1)
@@ -353,7 +353,7 @@ class LiveFilterSearchTest(SearchTest):
         # Make sure that there are four to find!
         self.assertEqual(watson.search("tItle Content Description").count(), 4)
         # Unpublish two objects.
-        with watson.context():
+        with watson.update_index():
             self.test11.is_published = False
             self.test11.save()
             self.test21.is_published = False
@@ -363,7 +363,7 @@ class LiveFilterSearchTest(SearchTest):
         
     def testCanOverridePublication(self):
         # Unpublish two objects.
-        with watson.context():
+        with watson.update_index():
             self.test11.is_published = False
             self.test11.save()
         # This should still return 4, since we're overriding the publication.
@@ -372,7 +372,7 @@ class LiveFilterSearchTest(SearchTest):
         
 class RankingTest(SearchTestBase):
 
-    @watson.update_index
+    @watson.update_index()
     def setUp(self):
         super(RankingTest, self).setUp()
         self.test11.title += " fooo baar fooo"
@@ -535,7 +535,7 @@ class SiteSearchTest(SearchTestBase):
             response = self.client.get("/custom/?fooo=title&page=10")
         except template.TemplateDoesNotExist as ex:
             # No 404 template defined.
-            self.assertEqual(ex.message, "404.html")
+            self.assertEqual(ex.args[0], "404.html")
         else:
             self.assertEqual(response.status_code, 404)
         # Test a requet for the last page.
