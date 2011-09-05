@@ -2,7 +2,6 @@
 
 import re
 from threading import local
-from contextlib import contextmanager
 from functools import wraps
 from weakref import WeakValueDictionary
 
