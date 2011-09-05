@@ -193,7 +193,7 @@ class SearchContextManager(local):
         """Marks this search context as broken, so should not be commited."""
         self._assert_active()
         objects, is_invalid = self._stack[-1]
-        self._stack[-1] = (objects, False)
+        self._stack[-1] = (objects, True)
         
     def is_invalid(self):
         """Checks whether this search context is invalid."""

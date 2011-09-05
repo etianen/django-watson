@@ -177,6 +177,17 @@ class InternalsTest(SearchTestBase):
         # Delete a model and make sure that the search results match.
         self.test11.delete()
         self.assertEqual(watson.search("fooo").count(), 0)
+    
+    def testSearchIndexUpdateAbandonedOnError(self):
+        try:
+            with watson.update_index():
+                self.test11.title = "fooo"
+                self.test11.save()
+                raise Exception("Foo")
+        except:
+            pass
+        # Test a search that should get not model.
+        self.assertEqual(watson.search("fooo").count(), 0)
         
     def testFixesDuplicateSearchEntries(self):
         search_entries = SearchEntry.objects.filter(engine_slug="default")
