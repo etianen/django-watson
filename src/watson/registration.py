@@ -494,7 +494,7 @@ class SearchEngine(object):
                 yield model
             else:
                 adaptor = self.get_adapter(model)
-                queryset = adaptor.get_live_queryset()
+                queryset = adaptor.get_live_queryset().all()
                 if queryset is None:
                     yield model
                 else:
