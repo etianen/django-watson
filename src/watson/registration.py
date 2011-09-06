@@ -494,11 +494,11 @@ class SearchEngine(object):
                 yield model
             else:
                 adaptor = self.get_adapter(model)
-                queryset = adaptor.get_live_queryset().all()
+                queryset = adaptor.get_live_queryset()
                 if queryset is None:
                     yield model
                 else:
-                    yield queryset
+                    yield queryset.all()
     
     def search(self, search_text, models=(), exclude=(), ranking=True):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
