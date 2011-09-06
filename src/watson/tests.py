@@ -16,6 +16,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
 from django import template
+from django.utils import simplejson as json
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
@@ -459,11 +460,11 @@ class TestModel1Admin(watson.SearchAdmin):
 admin.site.register(TestModel1, TestModel1Admin)
 
 
-urlpatterns = patterns("watson.views",
+urlpatterns = patterns("",
 
-    url("^simple/$", "search", name="search_simple"),
+    url("^simple/", include("watson.urls")),
     
-    url("^custom/$", "search", name="search_custom", kwargs={
+    url("^custom/", include("watson.urls"), kwargs={
         "query_param": "fooo",
         "empty_query_redirect": "/simple/",
         "extra_context": {
@@ -535,6 +536,17 @@ class SiteSearchTest(SearchTestBase):
         self.assertNotContains(response, "instance21")
         self.assertNotContains(response, "instance22")
         
+    def testSiteSearchJSON(self):
+        # Test a search that should find everything.
+        response = self.client.get("/simple/json/?q=title")
+        self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
+        results = set(result["title"] for result in json.loads(response.content)["results"])
+        self.assertEqual(len(results), 4)
+        self.assertTrue("title model1 instance11" in results)
+        self.assertTrue("title model1 instance12" in results)
+        self.assertTrue("title model2 instance21" in results)
+        self.assertTrue("title model2 instance22" in results)
+        
     def testSiteSearchCustom(self):
         # Test a search than should find everything.
         response = self.client.get("/custom/?fooo=title")
@@ -566,3 +578,18 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find nothing.
         response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")
+        
+    def testSiteSearchCustomJSON(self):
+        # Test a search that should find everything.
+        response = self.client.get("/custom/json/?fooo=title&page=last")
+        self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
+        results = set(result["title"] for result in json.loads(response.content)["results"])
+        self.assertEqual(len(results), 4)
+        self.assertTrue("title model1 instance11" in results)
+        self.assertTrue("title model1 instance12" in results)
+        self.assertTrue("title model2 instance21" in results)
+        self.assertTrue("title model2 instance22" in results)
+        # Test a search with an invalid page.
+        response = self.client.get("/custom/json/?fooo=title&page=200")
+        results = set(result["title"] for result in json.loads(response.content)["results"])
+        self.assertEqual(len(results), 0)

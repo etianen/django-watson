@@ -2,7 +2,8 @@
 
 from django.core.paginator import Paginator, InvalidPage
 from django.shortcuts import render, redirect
-from django.http import Http404
+from django.http import Http404, HttpResponse
+from django.utils import simplejson as json
 
 import watson
 from watson.models import SearchEntry
@@ -29,12 +30,7 @@ def _get_search_results(request, kwargs):
         page = page or request.GET.get(page_param, 1)
         if page == last_page_value:
             page = paginator.num_pages
-        try:
-            page_obj = paginator.page(page)
-        except InvalidPage:
-            raise Http404(u"There are no items on page {page}".format(
-                page = page,
-            ))
+        page_obj = paginator.page(page)
         return query, page_obj.object_list, paginator, page_obj
 
 
@@ -42,7 +38,10 @@ def search(request, template_name="watson/search_results.html", empty_query_redi
     extra_context=None, context_object_name="search_results", **kwargs):
     """Renders a list of matching search entries."""
     # Get the search results.
-    query, search_results, paginator, page_obj = _get_search_results(request, kwargs)
+    try:
+        query, search_results, paginator, page_obj = _get_search_results(request, kwargs)
+    except InvalidPage:
+        raise Http404("There are no items on that page")
     # Process empty query redirects.
     if not query and empty_query_redirect:
         return redirect(empty_query_redirect)
@@ -61,3 +60,28 @@ def search(request, template_name="watson/search_results.html", empty_query_redi
             context[key] = value
     # Render the template.
     return render(request, template_name, context)
+    
+    
+def search_json(request, **kwargs):
+    """Renders a json representation of matching search entries."""
+    # Get the search results.
+    try:
+        query, search_results, paginator, page_obj = _get_search_results(request, kwargs)
+    except InvalidPage:
+        search_results = ()
+    # Render the payload.
+    content = json.dumps({
+        "results": [
+            {
+                "title": result.title,
+                "description": result.description,
+                "url": result.url,
+                "meta": result.meta,
+            } for result in search_results
+        ]
+    }).encode("utf-8")
+    # Generate the response.
+    response = HttpResponse(content)
+    response["Content-Type"] = "application/json; charset=utf-8"
+    response["Content-Length"] = len(content)
+    return response

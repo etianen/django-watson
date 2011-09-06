@@ -1,10 +1,11 @@
 """Models used by django-watson."""
 
-import cPickle, base64
+import base64
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
+from django.utils import simplejson as json
 
 
 def has_int_pk(model):
@@ -68,7 +69,7 @@ class SearchEntry(models.Model):
         if hasattr(self, META_CACHE_KEY):
             return getattr(self, META_CACHE_KEY)
         # Decode the meta.
-        meta_value = cPickle.loads(base64.decodestring(self.meta_encoded.decode("latin1")))
+        meta_value = json.loads(self.meta_encoded)
         setattr(self, META_CACHE_KEY, meta_value)
         return meta_value
         
@@ -79,7 +80,7 @@ class SearchEntry(models.Model):
         if hasattr(self, META_CACHE_KEY):
             delattr(self, META_CACHE_KEY)
         # Set the meta.
-        self.meta_encoded = base64.encodestring(cPickle.dumps(meta_value)).encode("latin1")
+        self.meta_encoded = json.dumps(meta_value)
         
     def get_absolute_url(self):
         """Returns the URL of the referenced object."""
