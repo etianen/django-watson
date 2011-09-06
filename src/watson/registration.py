@@ -502,6 +502,11 @@ class SearchEngine(object):
     
     def search(self, search_text, models=(), exclude=(), ranking=True):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
+        # Check for blank search text.
+        search_text = search_text.strip()
+        if not search_text:
+            return SearchEntry.objects.none()
+        # Get the initial queryset.
         queryset = SearchEntry.objects.filter(
             engine_slug = self._engine_slug,
         )
@@ -528,6 +533,10 @@ class SearchEngine(object):
         # If the queryset is a model, get all of them.
         if isinstance(queryset, type) and issubclass(queryset, models.Model):
             queryset = queryset._default_manager.all()
+        # Check for blank search text.
+        search_text = search_text.strip()
+        if not search_text:
+            return queryset.model.objects.none()
         # Perform the backend-specific full text match.
         backend = get_backend()
         queryset = backend.do_filter(self._engine_slug, queryset, search_text)

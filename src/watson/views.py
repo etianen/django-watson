@@ -8,26 +8,22 @@ import watson
 from watson.models import SearchEntry
 
 
-def search(request, query_param="q", template_name="watson/search_results.html",
-           empty_query_redirect=None, models=(), exclude=(), extra_context=None,
-           context_object_name="search_results", paginate_by=None, page=None,
-           page_param="page", last_page_value="last"):
-    """Renders a list of matching search entries."""
-    query = request.GET.get(query_param, u"")
-    # Check for blank queries.
-    if query:
-        search_results = watson.search(query, models=models, exclude=exclude)
-    else:
-        if empty_query_redirect:
-            return redirect(empty_query_redirect)
-        search_results = SearchEntry.objects.none()
-    # Start creating the context.
-    context = {
-        "query": query,
-    }
-    # Apply pagination.
+def _get_search_results(request, kwargs):
+    """Performs the search and pagination of the results."""
+    # Extract configuration.
+    query_param = kwargs.get("query_param", "q")
+    models = kwargs.get("models", ())
+    exclude = kwargs.get("exclude", ())
+    paginate_by = kwargs.get("paginate_by")
+    page = kwargs.get("page", None)
+    page_param = kwargs.get("page_param", "page")
+    last_page_value = kwargs.get("last_page_value", "last")
+    # Get the query.
+    query = request.GET.get(query_param, u"").strip()
+    search_results = watson.search(query, models=models, exclude=exclude)
+    # Process the pagination.
     if paginate_by is None:
-        context[context_object_name] = search_results
+        return query, search_results, None, None
     else:
         paginator = Paginator(search_results, per_page=paginate_by, allow_empty_first_page=True)
         page = page or request.GET.get(page_param, 1)
@@ -39,10 +35,24 @@ def search(request, query_param="q", template_name="watson/search_results.html",
             raise Http404(u"There are no items on page {page}".format(
                 page = page,
             ))
-        context[context_object_name] = search_results
-        context["paginator"] = paginator
-        context["page_obj"] = page_obj
-        context[context_object_name] = page_obj.object_list
+        return query, page_obj.object_list, paginator, page_obj
+
+
+def search(request, template_name="watson/search_results.html", empty_query_redirect=None,
+    extra_context=None, context_object_name="search_results", **kwargs):
+    """Renders a list of matching search entries."""
+    # Get the search results.
+    query, search_results, paginator, page_obj = _get_search_results(request, kwargs)
+    # Process empty query redirects.
+    if not query and empty_query_redirect:
+        return redirect(empty_query_redirect)
+    # Start creating the context.
+    context = {
+        "query": query,
+        "paginator": paginator,
+        "page_obj": page_obj,
+        context_object_name: search_results,
+    }
     # Update the context.
     if extra_context:
         for key, value in extra_context.iteritems():

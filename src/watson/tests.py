@@ -209,6 +209,11 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("fooo").count(), 1)
         self.assertEqual(watson.search("baar.com").count(), 1)
         self.assertEqual(watson.search("fooo@baar.com").count(), 1)
+    
+    def testEmptyFilterGivesNoResults(self):
+        for model in (TestModel1, TestModel2):
+            self.assertEqual(watson.filter(model, "").count(), 0)
+            self.assertEqual(watson.filter(model, " ").count(), 0)
         
     def testFilter(self):
         for model in (TestModel1, TestModel2):
@@ -225,6 +230,10 @@ class InternalsTest(SearchTestBase):
         
         
 class SearchTest(SearchTestBase):
+    
+    def emptySearchTextGivesNoResults(self):
+        self.assertEqual(watson.search("").count(), 0)
+        self.assertEqual(watson.search(" ").count(), 0)        
     
     def testMultiTableSearch(self):
         # Test a search that should get all models.
