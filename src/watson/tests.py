@@ -508,6 +508,11 @@ class AdminIntegrationTest(SearchTestBase):
     @skipUnless("django.contrib.admin" in settings.INSTALLED_APPS, "Django admin site not installed")
     def testAdminIntegration(self):
         self.client.login(username="foo", password="bar")
+        # Test a search with no query.
+        response = self.client.get("/admin/auth/testmodel1/")
+        self.assertContains(response, "instance11")
+        self.assertContains(response, "instance12")
+        self.assertContains(response, "searchbar")  # Ensure that the search bar renders.
         # Test a search for all the instances.
         response = self.client.get("/admin/auth/testmodel1/?q=title content description")
         self.assertContains(response, "instance11")
