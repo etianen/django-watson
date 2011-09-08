@@ -25,7 +25,9 @@ class WatsonSearchChangeList(ChangeList):
         # Do the basic searching.
         qs = super(WatsonSearchChangeList, self).get_query_set()
         # Do the full text searching.
-        return self.model_admin.search_engine.filter(qs, self.query, ranking=False)
+        if self.query.strip():
+            qs = self.model_admin.search_engine.filter(qs, self.query, ranking=False)
+        return qs
 
 
 class SearchAdmin(admin.ModelAdmin):
@@ -51,7 +53,8 @@ class SearchAdmin(admin.ModelAdmin):
     
     def register_model_with_watson(self):
         """Registers this admin class' model with django-watson."""
-        self.search_engine.register(self.model, fields=self.search_fields)
+        if not self.search_engine.is_registered(self.model):
+            self.search_engine.register(self.model, fields=self.search_fields)
     
     def get_changelist(self, request, **kwargs):
         """Returns the ChangeList class for use on the changelist page."""
