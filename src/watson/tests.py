@@ -15,6 +15,7 @@ from django.conf.urls.defaults import *
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
+from django.http import HttpResponseNotFound, HttpResponseServerError
 from django import template
 from django.utils import simplejson as json
 
@@ -99,6 +100,9 @@ class SearchTestBase(TestCase):
 
     @watson.update_index()
     def setUp(self):
+        # If migrations are off, then this is needed to get the indices installed. It has to
+        # be called in the setUp() method, but multiple invocations should be safe.
+        call_command("installwatson", verbosity=0)
         # Remove all the current registered models.
         self.registered_models = watson.get_registered_models()
         for model in self.registered_models:
@@ -477,6 +481,14 @@ urlpatterns = patterns("",
     url("^admin/", include(admin.site.urls)),
 
 )
+
+
+def handler404(request):
+    return HttpResponseNotFound("Not found")
+    
+    
+def handler500(request):
+    return HttpResponseServerError("Server error")
 
 
 class AdminIntegrationTest(SearchTestBase):

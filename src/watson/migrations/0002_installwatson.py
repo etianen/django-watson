@@ -16,6 +16,8 @@ class Migration(DataMigration):
 
     def backwards(self, orm):
         "Write your backwards methods here."
+        
+        call_command("uninstallwatson", verbosity=0)
 
 
     models = {

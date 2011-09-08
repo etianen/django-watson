@@ -1,4 +1,4 @@
-"""Creates the database indices needed by django-watson."""
+"""Destroys the database indices needed by django-watson."""
 
 from django.core.management.base import NoArgsCommand
 from django.db import transaction
@@ -8,7 +8,7 @@ from watson.registration import get_backend
 
 class Command(NoArgsCommand):
 
-    help = "Creates the database indices needed by django-watson."
+    help = "Destroys the database indices needed by django-watson."
     
     @transaction.commit_on_success
     def handle_noargs(self, **options):
@@ -16,9 +16,9 @@ class Command(NoArgsCommand):
         verbosity = int(options.get("verbosity", 1))
         backend = get_backend()
         if backend.is_installed():
+            backend.do_uninstall()
             if verbosity >= 2:
-                self.stdout.write("django-watson is already installed.\n")
+                self.stdout.write("django-watson has been successfully uninstalled.\n")
         else:
-            backend.do_install()
             if verbosity >= 2:
-                self.stdout.write("django-watson has been successfully installed.\n")
+                self.stdout.write("django-watson is not installed.\n")

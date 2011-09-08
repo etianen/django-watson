@@ -22,8 +22,12 @@ class SearchBackend(object):
 
     """Base class for all search backends."""
     
+    def is_installed(self):
+        """Checks whether django-watson is installed."""
+        return True
+    
     def do_install(self):
-        """Generates the SQL needed to install django-watson."""
+        """Executes the SQL needed to install django-watson."""
         pass
     
     supports_ranking = False
@@ -73,8 +77,17 @@ class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
     
+    def is_installed(self):
+        """Checks whether django-watson is installed."""
+        cursor = connection.cursor()
+        cursor.execute("""        
+            SELECT attname FROM pg_attribute
+            WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = 'watson_searchentry') AND attname = 'search_tsv';
+        """)
+        return bool(cursor.fetchall())
+    
     def do_install(self):
-        """Generates the PostgreSQL specific SQL code to install django-watson."""
+        """Executes the PostgreSQL specific SQL code to install django-watson."""
         connection.cursor().execute("""
             -- Ensure that plpgsql is installed.
             CREATE OR REPLACE FUNCTION make_plpgsql() RETURNS VOID LANGUAGE SQL AS
@@ -108,6 +121,16 @@ class PostgresSearchBackend(SearchBackend):
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER watson_searchentry_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
+        """)
+        
+    def do_uninstall(self):
+        """Executes the PostgreSQL specific SQL code to uninstall django-watson."""
+        connection.cursor().execute("""
+            ALTER TABLE watson_searchentry DROP COLUMN search_tsv;
+            
+            DROP TRIGGER watson_searchentry_trigger ON watson_searchentry;
+            
+            DROP FUNCTION watson_searchentry_trigger_handler();
         """)
     
     supports_ranking = True

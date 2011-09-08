@@ -15,15 +15,17 @@ class WatsonSearchChangeList(ChangeList):
     
     def __init__(self, request, model, list_display, list_display_links, list_filter, date_hierarchy, search_fields, list_select_related, list_per_page, list_editable, model_admin):
         """Initializes the search engine."""
-        # Clear the search fields.
-        search_fields = ()
-        # Initialize the change list.
         super(WatsonSearchChangeList, self).__init__(request, model, list_display, list_display_links, list_filter, date_hierarchy, search_fields, list_select_related, list_per_page, list_editable, model_admin)
         
     def get_query_set(self):
         """Creates the query set."""
         # Do the basic searching.
-        qs = super(WatsonSearchChangeList, self).get_query_set()
+        search_fields = self.search_fields
+        self.search_fields = ()
+        try:
+            qs = super(WatsonSearchChangeList, self).get_query_set()
+        finally:
+            self.search_fields = search_fields
         # Do the full text searching.
         if self.query.strip():
             qs = self.model_admin.search_engine.filter(qs, self.query, ranking=False)
