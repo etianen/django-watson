@@ -1,11 +1,16 @@
 """Rebuilds the database indices needed by django-watson."""
 
 from django.core.management.base import NoArgsCommand
+from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
 from watson.registration import SearchEngine
 from watson.models import SearchEntry
+
+
+# Sets up registration for django-watson's admin integration.
+admin.autodiscover()
 
 
 class Command(NoArgsCommand):
