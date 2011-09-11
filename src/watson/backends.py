@@ -34,6 +34,8 @@ class SearchBackend(object):
         """Executes the SQL needed to uninstall django-watson."""
         pass
     
+    requires_installation = False
+    
     supports_ranking = False
     
     def do_search(self, engine_slug, queryset, search_text):
@@ -136,6 +138,8 @@ class PostgresSearchBackend(SearchBackend):
             
             DROP FUNCTION watson_searchentry_trigger_handler();
         """)
+        
+    requires_installation = True
     
     supports_ranking = True
         
@@ -235,6 +239,8 @@ class MySQLSearchBackend(SearchBackend):
         cursor.execute("DROP INDEX watson_searchentry_title ON watson_searchentry")
         cursor.execute("DROP INDEX watson_searchentry_description ON watson_searchentry")
         cursor.execute("DROP INDEX watson_searchentry_content ON watson_searchentry")
+    
+    requires_installation = True
     
     supports_ranking = True
     

@@ -15,7 +15,10 @@ class Command(NoArgsCommand):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))
         backend = get_backend()
-        if backend.is_installed():
+        if not backend.requires_installation:
+            if verbosity >= 2:
+                self.stdout.write("Your search backend does not require installation.\n")
+        elif backend.is_installed():
             backend.do_uninstall()
             if verbosity >= 2:
                 self.stdout.write("django-watson has been successfully uninstalled.\n")
