@@ -198,6 +198,12 @@ def escape_mysql_boolean_query(search_text):
         
 class MySQLSearchBackend(SearchBackend):
 
+    def is_installed(self):
+        """Checks whether django-watson is installed."""
+        cursor = connection.cursor()
+        cursor.execute("SHOW INDEX FROM watson_searchentry WHERE Key_name = 'watson_searchentry_fulltext'");
+        return bool(cursor.fetchall())
+
     def do_install(self):
         """Generates the PostgreSQL specific SQL code to install django-watson."""
         cursor = connection.cursor()
