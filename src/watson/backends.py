@@ -29,6 +29,10 @@ class SearchBackend(object):
     def do_install(self):
         """Executes the SQL needed to install django-watson."""
         pass
+        
+    def do_uninstall(self):
+        """Executes the SQL needed to uninstall django-watson."""
+        pass
     
     supports_ranking = False
     
@@ -205,7 +209,7 @@ class MySQLSearchBackend(SearchBackend):
         return bool(cursor.fetchall())
 
     def do_install(self):
-        """Generates the PostgreSQL specific SQL code to install django-watson."""
+        """Executes the MySQL specific SQL code to install django-watson."""
         cursor = connection.cursor()
         # Drop all foreign keys on the watson_searchentry table.
         cursor.execute("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'watson_searchentry' AND CONSTRAINT_TYPE = 'FOREIGN KEY'")
@@ -217,11 +221,20 @@ class MySQLSearchBackend(SearchBackend):
         cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
         # Change the collaction to a case-insensitive one.
         cursor.execute("ALTER TABLE watson_searchentry CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci")
-        # Add the full text indexex.
+        # Add the full text indexes.
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title ON watson_searchentry (title)")
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_description ON watson_searchentry (description)")
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_content ON watson_searchentry (content)")
+    
+    def do_uninstall(self):
+        """Executes the SQL needed to uninstall django-watson."""
+        cursor = connection.cursor()
+        # Destroy the full text indexes.
+        cursor.execute("DROP INDEX watson_searchentry_fulltext ON watson_searchentry")
+        cursor.execute("DROP INDEX watson_searchentry_title ON watson_searchentry")
+        cursor.execute("DROP INDEX watson_searchentry_description ON watson_searchentry")
+        cursor.execute("DROP INDEX watson_searchentry_content ON watson_searchentry")
     
     supports_ranking = True
     
