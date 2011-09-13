@@ -55,7 +55,7 @@ class SearchAdmin(admin.ModelAdmin):
     
     def register_model_with_watson(self):
         """Registers this admin class' model with django-watson."""
-        if not self.search_engine.is_registered(self.model):
+        if not self.search_engine.is_registered(self.model) and self.search_fields:
             self.search_engine.register(self.model, fields=self.search_fields)
     
     def get_changelist(self, request, **kwargs):
