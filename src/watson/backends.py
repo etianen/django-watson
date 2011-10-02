@@ -164,6 +164,7 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
+        pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
         else:
@@ -176,7 +177,7 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
-                    pk_name = connection.ops.quote_name(model._meta.pk.name),
+                    pk_name = connection.ops.quote_name(pk.db_column or pk.attname),
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
@@ -270,6 +271,7 @@ class MySQLSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
+        pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
         else:
@@ -282,7 +284,7 @@ class MySQLSearchBackend(SearchBackend):
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
-                    pk_name = connection.ops.quote_name(model._meta.pk.name),
+                    pk_name = connection.ops.quote_name(pk.db_column or pk.attname),
                 ),
                 "watson_searchentry.content_type_id = %s",
             ),
