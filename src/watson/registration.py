@@ -47,21 +47,26 @@ class SearchAdapter(object):
     
     def _resolve_field(self, obj, name):
         """Resolves the content of the given model field."""
+        name_parts = name.split("__", 1)
+        prefix = name_parts[0]
         # Get the attribute.
-        if hasattr(obj, name):
-            value = getattr(obj, name)
+        if hasattr(obj, prefix):
+            value = getattr(obj, prefix)
             if callable(value):
                 value = value()
-        elif hasattr(self, name):
-            value = getattr(self, name)
+        elif hasattr(self, prefix):
+            value = getattr(self, prefix)
             if callable(value):
                 value = value(obj)
         else:
             raise SearchAdapterError("Could not find a property called {name!r} on either {obj!r} or {search_adapter!r}".format(
-                name = name,
+                name = prefix,
                 obj = obj,
                 search_adapter = self,
             ))
+        # Look up recursive fields.
+        if len(name_parts) == 2:
+            return self._resolve_field(value, name_parts[1])
         # Resolution complete!
         return value
     
