@@ -232,10 +232,10 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("baar.com").count(), 1)
         self.assertEqual(watson.search("fooo@baar.com").count(), 1)
     
-    def testEmptyFilterGivesNoResults(self):
+    def testEmptyFilterGivesAllResults(self):
         for model in (WatsonTestModel1, WatsonTestModel2):
-            self.assertEqual(watson.filter(model, "").count(), 0)
-            self.assertEqual(watson.filter(model, " ").count(), 0)
+            self.assertEqual(watson.filter(model, "").count(), 2)
+            self.assertEqual(watson.filter(model, " ").count(), 2)
         
     def testFilter(self):
         for model in (WatsonTestModel1, WatsonTestModel2):

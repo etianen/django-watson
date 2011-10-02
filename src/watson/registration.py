@@ -536,7 +536,7 @@ class SearchEngine(object):
         # Check for blank search text.
         search_text = search_text.strip()
         if not search_text:
-            return queryset.model.objects.none()
+            return queryset
         # Perform the backend-specific full text match.
         backend = get_backend()
         queryset = backend.do_filter(self._engine_slug, queryset, search_text)
