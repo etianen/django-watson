@@ -8,3 +8,5 @@
 .bzrignore
 Thumbs.db
 
+/MANIFEST
+/dist
