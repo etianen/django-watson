@@ -3,12 +3,11 @@
 import re
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, connection
+from django.db import connection
 from django.db.models import Q
 
-from watson.models import SearchEntry, has_int_pk
+from watson.models import has_int_pk
 
 
 def regex_from_word(word):

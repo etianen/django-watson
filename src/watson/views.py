@@ -6,7 +6,6 @@ from django.http import Http404, HttpResponse
 from django.utils import simplejson as json
 
 import watson
-from watson.models import SearchEntry
 
 
 def _get_search_results(request, kwargs):
@@ -66,7 +65,7 @@ def search_json(request, **kwargs):
     """Renders a json representation of matching search entries."""
     # Get the search results.
     try:
-        query, search_results, paginator, page_obj = _get_search_results(request, kwargs)
+        _, search_results, _, _ = _get_search_results(request, kwargs)
     except InvalidPage:
         search_results = ()
     # Render the payload.
