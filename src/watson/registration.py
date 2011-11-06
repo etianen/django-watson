@@ -7,10 +7,11 @@ from weakref import WeakValueDictionary
 
 from django.conf import settings
 from django.core.signals import request_started, request_finished
+from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
 from django.db import models
-from django.db.models import Q, Model
+from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
@@ -66,7 +67,12 @@ class SearchAdapter(object):
             ))
         # Look up recursive fields.
         if len(name_parts) == 2:
+            if isinstance(value, (QuerySet, models.Manager)):
+                return u" ".join(unicode(self._resolve_field(obj, name_parts[1])) for obj in value.all())
             return self._resolve_field(value, name_parts[1])
+        # Resolve querysets.
+        if isinstance(value, (QuerySet, models.Manager)):
+            value = u" ".join(unicode(related) for related in value.all())
         # Resolution complete!
         return value
     
