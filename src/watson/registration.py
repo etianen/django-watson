@@ -9,7 +9,6 @@ from django.conf import settings
 from django.core.signals import request_started, request_finished
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.contenttypes import generic
 from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -196,19 +195,19 @@ class SearchContextManager(local):
     def add_to_context(self, engine, obj):
         """Adds an object to the current context, if active."""
         self._assert_active()
-        objects, is_invalid = self._stack[-1]
+        objects, _ = self._stack[-1]
         objects.add((engine, obj))
     
     def invalidate(self):
         """Marks this search context as broken, so should not be commited."""
         self._assert_active()
-        objects, is_invalid = self._stack[-1]
+        objects, _ = self._stack[-1]
         self._stack[-1] = (objects, True)
         
     def is_invalid(self):
         """Checks whether this search context is invalid."""
         self._assert_active()
-        objects, is_invalid = self._stack[-1]
+        _, is_invalid = self._stack[-1]
         return is_invalid
     
     def end(self):
