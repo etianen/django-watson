@@ -345,18 +345,6 @@ class SearchEngine(object):
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[model] = adapter_obj
-        # Add in a generic relation, if not exists.
-        if not hasattr(model, "searchentry_set"):
-            if has_int_pk(model):
-                object_id_field = "object_id_int"
-            else:
-                object_id_field = "object_id"
-            generic_relation = generic.GenericRelation(
-                SearchEntry,
-                object_id_field = object_id_field,
-            )
-            model.searchentry_set = generic_relation
-            generic_relation.contribute_to_class(model, "searchentry_set")
         # Connect to the signalling framework.
         post_save.connect(self._post_save_receiver, model)
         pre_delete.connect(self._pre_delete_receiver, model)

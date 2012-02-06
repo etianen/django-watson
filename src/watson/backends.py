@@ -59,11 +59,55 @@ class SearchBackend(object):
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         word_query = Q(searchentry_set__engine_slug=engine_slug)
+        model = queryset.model
+        db_table = connection.ops.quote_name(SearchEntry._meta.db_table)
+        model_db_table = connection.ops.quote_name(model._meta.db_table)
+        pk = model._meta.pk
+        id = connection.ops.quote_name(pk.db_column or pk.attname)
+        # Add in basic filters.
+        word_query = [u"""
+            ({db_table}.{engine_slug} = %s)
+        """, """
+            ({db_table}.{content_type_id} = %s)
+        """]
+        word_kwargs= {
+            u"db_table": db_table,
+            u"model_db_table": model_db_table,
+            u"engine_slug": connection.ops.quote_name(u"engine_slug"),
+            u"title": connection.ops.quote_name(u"title"),
+            u"description": connection.ops.quote_name(u"description"),
+            u"content": connection.ops.quote_name(u"content"),
+            u"content_type_id": connection.ops.quote_name(u"content_type_id"),
+            u"object_id": connection.ops.quote_name(u"object_id"),
+            u"object_id_int": connection.ops.quote_name(u"object_id_int"),
+            u"id": id,
+        }
+        word_args = [
+            engine_slug,
+            ContentType.objects.get_for_model(model).id,
+        ]
+        # Add in join.
+        if has_int_pk(model):
+            word_query.append("""
+                ({db_table}.{object_id_int} = {model_db_table}.{id})
+            """)
+        else:
+            word_query.append("""
+                ({db_table}.{object_id} = {model_db_table}.{id})
+            """)
+        # Add in all words.
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_query &= (Q(searchentry_set__title__iregex=regex) | Q(searchentry_set__description__iregex=regex) | Q(searchentry_set__content__iregex=regex))
-        return queryset.filter(
-            word_query
+            word_query.append(u"""
+                ({db_table}.{title} REGEXP '(?i)' || %s OR {db_table}.{description} REGEXP '(?i)' || %s OR {db_table}.{content} REGEXP '(?i)' || %s) 
+            """)
+            word_args.extend((regex, regex, regex))
+        # Compile the query.
+        full_word_query = u" AND ".join(word_query).format(**word_kwargs)
+        return queryset.extra(
+            tables = (db_table,),
+            where = (full_word_query,),
+            params = word_args,
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
