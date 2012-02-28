@@ -1,11 +1,12 @@
 """Search backends used by django-watson."""
 
-import re
+import re, abc
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models import Q
+from django.core.exceptions import ImproperlyConfigured
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -20,6 +21,8 @@ def regex_from_word(word):
 class SearchBackend(object):
 
     """Base class for all search backends."""
+    
+    __metaclass__ = abc.ABCMeta
     
     def is_installed(self):
         """Checks whether django-watson is installed."""
@@ -57,6 +60,28 @@ class SearchBackend(object):
             },
         )
         
+    def do_filter_ranking(self, engine_slug, queryset, search_text):
+        """Ranks the given queryset according to the relevance of the given search text."""
+        return queryset.extra(
+            select = {
+                "watson_rank": "1",
+            },
+        )
+    
+    @abc.abstractmethod
+    def do_filter(self, engine_slug, queryset, search_text):
+        """Filters the given queryset according the the search logic for this backend."""
+        raise NotImplementedError
+    
+    def save_search_entry(self, search_entry, obj, adapter):
+        """Saves the given search entry in the database."""
+        search_entry.save()
+
+
+class SQLite3SearchBackend(SearchBackend):
+    
+    """A search backend that works with SQLite3."""
+    
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         model = queryset.model
@@ -109,18 +134,6 @@ class SearchBackend(object):
             where = (full_word_query,),
             params = word_args,
         )
-        
-    def do_filter_ranking(self, engine_slug, queryset, search_text):
-        """Ranks the given queryset according to the relevance of the given search text."""
-        return queryset.extra(
-            select = {
-                "watson_rank": "1",
-            },
-        )
-    
-    def save_search_entry(self, search_entry, obj, adapter):
-        """Saves the given search entry in the database."""
-        search_entry.save()
 
 
 class PostgresSearchBackend(SearchBackend):
@@ -394,4 +407,6 @@ class AdaptiveSearchBackend(SearchBackend):
                 return PostgresLegacySearchBackend()
         if database_engine.endswith("mysql"):
             return MySQLSearchBackend()
-        return SearchBackend()
+        if database_engine.endswith("sqlite3"):
+            return SQLite3SearchBackend()
+        raise ImproperlyConfigured("Your database engine is not supported by the adaptive search backend.")
