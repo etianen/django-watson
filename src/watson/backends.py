@@ -123,12 +123,11 @@ class SearchBackend(object):
 
 def escape_postgres_query(text):
     """Escapes the given text to become a valid ts_query."""
-    parts = []
-    for word in text.split():
-        word = word.replace(":", "").replace("|", "")
-        if word:
-            parts.append(u"{}:*".format(word))
-    return u" & ".join(parts)
+    return u" & ".join(
+        u"{}:*".format(word)
+        for word
+        in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").split()
+    )
 
 
 class PostgresSearchBackend(SearchBackend):
@@ -249,10 +248,10 @@ class PostgresSearchBackend(SearchBackend):
 
 def escape_mysql_boolean_query(search_text):
     return u" ".join(
-        u'+"{word}"'.format(
-            word = word.replace(u'"', u''),
+        u'+{word}*'.format(
+            word = word,
         )
-        for word in search_text.split()
+        for word in search_text.replace(u"+", u"").replace(u"-", u"").replace(u"<", u"").replace(u">", u"").replace(u"(", u"").replace(u")", u"").replace(u"*", u"").replace(u'"', u"").split()
     )
     
 
