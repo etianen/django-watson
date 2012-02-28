@@ -6,7 +6,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models import Q
-from django.core.exceptions import ImproperlyConfigured
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -40,17 +39,7 @@ class SearchBackend(object):
     
     supports_ranking = False
     
-    supports_prefix_matching = True
-    
-    def do_search(self, engine_slug, queryset, search_text):
-        """Filters the given queryset according the the search logic for this backend."""
-        word_query = Q()
-        for word in search_text.split():
-            regex = regex_from_word(word)
-            word_query &= (Q(title__iregex=regex) | Q(description__iregex=regex) | Q(content__iregex=regex))
-        return queryset.filter(
-            word_query
-        )
+    supports_prefix_matching = False
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
@@ -59,6 +48,11 @@ class SearchBackend(object):
                 "watson_rank": "1",
             },
         )
+        
+    @abc.abstractmethod
+    def do_search(self, engine_slug, queryset, search_text):
+        """Filters the given queryset according the the search logic for this backend."""
+        raise NotImplementedError
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
@@ -78,10 +72,24 @@ class SearchBackend(object):
         search_entry.save()
 
 
-class SQLite3SearchBackend(SearchBackend):
+class RegexSearchMixin(object):
     
-    """A search backend that works with SQLite3."""
+    """Mixin to adding regex search to a search backend."""
     
+    __metaclass__ = abc.ABCMeta
+    
+    supports_prefix_matching = True
+    
+    def do_search(self, engine_slug, queryset, search_text):
+        """Filters the given queryset according the the search logic for this backend."""
+        word_query = Q()
+        for word in search_text.split():
+            regex = regex_from_word(word)
+            word_query &= (Q(title__iregex=regex) | Q(description__iregex=regex) | Q(content__iregex=regex))
+        return queryset.filter(
+            word_query
+        )
+        
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         model = queryset.model
@@ -106,6 +114,7 @@ class SQLite3SearchBackend(SearchBackend):
             u"object_id": connection.ops.quote_name(u"object_id"),
             u"object_id_int": connection.ops.quote_name(u"object_id_int"),
             u"id": id,
+            u"iregex_operator": connection.operators["iregex"],
         }
         word_args = [
             engine_slug,
@@ -124,7 +133,7 @@ class SQLite3SearchBackend(SearchBackend):
         for word in search_text.split():
             regex = regex_from_word(word)
             word_query.append(u"""
-                ({db_table}.{title} REGEXP '(?i)' || %s OR {db_table}.{description} REGEXP '(?i)' || %s OR {db_table}.{content} REGEXP '(?i)' || %s) 
+                ({db_table}.{title} {iregex_operator} OR {db_table}.{description} {iregex_operator} OR {db_table}.{content} {iregex_operator}) 
             """)
             word_args.extend((regex, regex, regex))
         # Compile the query.
@@ -134,6 +143,11 @@ class SQLite3SearchBackend(SearchBackend):
             where = (full_word_query,),
             params = word_args,
         )
+
+
+class RegexSearchBackend(RegexSearchMixin, SearchBackend):
+    
+    """A search backend that works with SQLite3."""
 
 
 class PostgresSearchBackend(SearchBackend):
@@ -207,6 +221,8 @@ class PostgresSearchBackend(SearchBackend):
     requires_installation = True
     
     supports_ranking = True
+    
+    supports_prefix_matching = True
         
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
@@ -273,6 +289,17 @@ class PostgresLegacySearchBackend(PostgresSearchBackend):
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
         return u" & ".join(text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split())
+
+
+class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBackend):
+    
+    """
+    A legacy search backend that uses a regexp to perform matches, but still allows
+    relevance rankings.
+    
+    Use if your postgres vesion is less than 8.3, and you absolutely can't live without
+    prefix matching. Beware, this backend can get slow with large datasets! 
+    """
         
 
 def escape_mysql_boolean_query(search_text):
@@ -320,6 +347,8 @@ class MySQLSearchBackend(SearchBackend):
         cursor.execute("DROP INDEX watson_searchentry_title ON watson_searchentry")
         cursor.execute("DROP INDEX watson_searchentry_description ON watson_searchentry")
         cursor.execute("DROP INDEX watson_searchentry_content ON watson_searchentry")
+    
+    supports_prefix_matching = True
     
     requires_installation = True
     
@@ -407,6 +436,4 @@ class AdaptiveSearchBackend(SearchBackend):
                 return PostgresLegacySearchBackend()
         if database_engine.endswith("mysql"):
             return MySQLSearchBackend()
-        if database_engine.endswith("sqlite3"):
-            return SQLite3SearchBackend()
-        raise ImproperlyConfigured("Your database engine is not supported by the adaptive search backend.")
+        return RegexSearchBackend()
