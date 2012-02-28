@@ -273,7 +273,7 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
         self.assertEqual(watson.search("MODEL2 INSTANCE11").count(), 0)
         # Test a prefix-matching search.
-        self.assertEqual(watson.search("TITL").count(), 4)
+        self.assertEqual(watson.search("DESCR").count(), 4)
     
     def testLimitedModelList(self):
         # Test a search that should get all models.
