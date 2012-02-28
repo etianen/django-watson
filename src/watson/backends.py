@@ -126,7 +126,7 @@ def escape_postgres_query(text):
     return u" & ".join(
         u"{}:*".format(word)
         for word
-        in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").split()
+        in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split()
     )
 
 
