@@ -3,9 +3,8 @@
 import re
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
-from django.db import models, connection
+from django.db import connection
 from django.db.models import Q
 
 from watson.models import SearchEntry, has_int_pk
@@ -58,7 +57,6 @@ class SearchBackend(object):
         
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
-        word_query = Q(searchentry_set__engine_slug=engine_slug)
         model = queryset.model
         db_table = connection.ops.quote_name(SearchEntry._meta.db_table)
         model_db_table = connection.ops.quote_name(model._meta.db_table)
