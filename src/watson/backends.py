@@ -119,8 +119,18 @@ class SearchBackend(object):
     def save_search_entry(self, search_entry, obj, adapter):
         """Saves the given search entry in the database."""
         search_entry.save()
-        
-        
+
+
+def escape_postgres_query(text):
+    """Escapes the given text to become a valid ts_query."""
+    parts = []
+    for word in text.split():
+        word = word.replace(":", "").replace("|", "")
+        if word:
+            parts.append(u"{}:*".format(word))
+    return u" & ".join(parts)
+
+
 class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
@@ -188,17 +198,17 @@ class PostgresSearchBackend(SearchBackend):
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
-            where = ("search_tsv @@ plainto_tsquery(%s)",),
-            params = (search_text,),
+            where = ("search_tsv @@ to_tsquery(%s)",),
+            params = (escape_postgres_query(search_text),),
         )
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(search_tsv, plainto_tsquery(%s))",
+                "watson_rank": "ts_rank_cd(search_tsv, to_tsquery(%s))",
             },
-            select_params = (search_text,),
+            select_params = (escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
@@ -215,7 +225,7 @@ class PostgresSearchBackend(SearchBackend):
             tables = ("watson_searchentry",),
             where = (
                 "watson_searchentry.engine_slug = %s",
-                "watson_searchentry.search_tsv @@ plainto_tsquery(%s)",
+                "watson_searchentry.search_tsv @@ to_tsquery(%s)",
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
@@ -223,16 +233,16 @@ class PostgresSearchBackend(SearchBackend):
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
-            params = (engine_slug, search_text, content_type.id),
+            params = (engine_slug, escape_postgres_query(search_text), content_type.id),
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, plainto_tsquery(%s))",
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery(%s))",
             },
-            select_params = (search_text,),
+            select_params = (escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
