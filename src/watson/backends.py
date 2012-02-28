@@ -37,6 +37,8 @@ class SearchBackend(object):
     
     supports_ranking = False
     
+    supports_prefix_matching = True
+    
     def do_search(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         word_query = Q()
@@ -121,18 +123,17 @@ class SearchBackend(object):
         search_entry.save()
 
 
-def escape_postgres_query(text):
-    """Escapes the given text to become a valid ts_query."""
-    return u" & ".join(
-        u"{}:*".format(word)
-        for word
-        in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split()
-    )
-
-
 class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
+    
+    def escape_postgres_query(self, text):
+        """Escapes the given text to become a valid ts_query."""
+        return u" & ".join(
+            u"{}:*".format(word)
+            for word
+            in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split()
+        )
     
     def is_installed(self):
         """Checks whether django-watson is installed."""
@@ -198,7 +199,7 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text search."""
         return queryset.extra(
             where = ("search_tsv @@ to_tsquery(%s)",),
-            params = (escape_postgres_query(search_text),),
+            params = (self.escape_postgres_query(search_text),),
         )
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
@@ -207,7 +208,7 @@ class PostgresSearchBackend(SearchBackend):
             select = {
                 "watson_rank": "ts_rank_cd(search_tsv, to_tsquery(%s))",
             },
-            select_params = (escape_postgres_query(search_text),),
+            select_params = (self.escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
@@ -232,7 +233,7 @@ class PostgresSearchBackend(SearchBackend):
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
-            params = (engine_slug, escape_postgres_query(search_text), content_type.id),
+            params = (engine_slug, self.escape_postgres_query(search_text), content_type.id),
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
@@ -241,9 +242,24 @@ class PostgresSearchBackend(SearchBackend):
             select = {
                 "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery(%s))",
             },
-            select_params = (escape_postgres_query(search_text),),
+            select_params = (self.escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
         )
+        
+        
+class PostgresLegacySearchBackend(PostgresSearchBackend):
+
+    """
+    A search backend that uses native PostgreSQL full text indices.
+    
+    This backend doesn't support prefix matching, and works with PostgreSQL 8.3 and below.
+    """
+    
+    supports_prefix_matching = False
+    
+    def escape_postgres_query(self, text):
+        """Escapes the given text to become a valid ts_query."""
+        return u" & ".join(text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split())
         
 
 def escape_mysql_boolean_query(search_text):
@@ -369,7 +385,13 @@ class AdaptiveSearchBackend(SearchBackend):
         """Guess the correct search backend and initialize it."""
         database_engine = settings.DATABASES["default"]["ENGINE"]
         if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
-            return PostgresSearchBackend()
+            from django.db.backends.postgresql.version import get_version
+            cursor = connection.cursor()
+            version = get_version(cursor)
+            if version > (8, 4, 0):
+                return PostgresSearchBackend()
+            if version > (8, 3, 0):
+                return PostgresLegacySearchBackend()
         if database_engine.endswith("mysql"):
             return MySQLSearchBackend()
         return SearchBackend()

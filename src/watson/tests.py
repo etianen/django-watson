@@ -242,7 +242,9 @@ class InternalsTest(SearchTestBase):
         obj = watson.filter(WatsonTestModel1.objects.filter(title__icontains="TITLE"), "INSTANCE12").get()
         self.assertTrue(isinstance(obj, WatsonTestModel1))
         self.assertEqual(obj.title, "title model1 instance12")
-        # Test prefix-matching filter.
+    
+    @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")    
+    def testPrefixFilter(self):
         self.assertEqual(watson.filter(WatsonTestModel1, "INSTAN").count(), 2)
         
         
@@ -272,7 +274,9 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("FOOO").count(), 0)
         self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
         self.assertEqual(watson.search("MODEL2 INSTANCE11").count(), 0)
-        # Test a prefix-matching search.
+        
+    @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
+    def testMultiTablePrefixSearch(self):
         self.assertEqual(watson.search("DESCR").count(), 4)
     
     def testLimitedModelList(self):
