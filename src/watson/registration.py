@@ -24,10 +24,6 @@ class SearchAdapterError(Exception):
     """Something went wrong with a search adapter."""
 
 
-# Used for splitting up email addresses.
-RE_EMAIL = re.compile(u"([a-z0-9][a-z0-9\.+]*)@([a-z0-9\.+]*[a-z])", re.IGNORECASE)
-
-
 class SearchAdapter(object):
 
     """An adapter for performing a full-text search on a model."""
@@ -79,14 +75,6 @@ class SearchAdapter(object):
         """Sanitizes the given content string for better parsing by the search engine."""
         # Strip out HTML tags.
         content = strip_tags(content)
-        # Split up email addresess.
-        def split_email(match):
-            return u" ".join((
-                match.group(0),
-                match.group(1),
-                match.group(2),
-            ))
-        content = RE_EMAIL.sub(split_email, content)
         return content
     
     def get_title(self, obj):

@@ -225,14 +225,6 @@ class InternalsTest(SearchTestBase):
         # Make sure that we have four again (including duplicates).
         self.assertEqual(search_entries.all().count(), 4)
     
-    def testSearchEmailParts(self):
-        with watson.update_index():
-            self.test11.content = "fooo@baar.com"
-            self.test11.save()
-        self.assertEqual(watson.search("fooo").count(), 1)
-        self.assertEqual(watson.search("baar.com").count(), 1)
-        self.assertEqual(watson.search("fooo@baar.com").count(), 1)
-    
     def testEmptyFilterGivesAllResults(self):
         for model in (WatsonTestModel1, WatsonTestModel2):
             self.assertEqual(watson.filter(model, "").count(), 2)
