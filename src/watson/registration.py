@@ -1,6 +1,6 @@
 """Adapters for registering models with django-watson."""
 
-import re, sys
+import sys
 from threading import local
 from functools import wraps
 from weakref import WeakValueDictionary

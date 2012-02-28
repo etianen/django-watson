@@ -6,7 +6,7 @@ that are 3 letters or fewer. Thus, the standard metasyntactic variables in
 these tests have been amended to 'fooo' and 'baar'. Ho hum.
 """
 
-from unittest import skipIf, skipUnless
+from unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
@@ -365,7 +365,7 @@ class SearchTest(SearchTestBase):
         
     def testKitchenSink(self):
         """For sanity, let's just test everything together in one giant search of doom!"""
-        results = self.assertEqual(watson.search(
+        self.assertEqual(watson.search(
             "INSTANCE11",
             models = (
                 WatsonTestModel1.objects.filter(title__icontains="INSTANCE11"),
