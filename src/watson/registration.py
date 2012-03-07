@@ -6,7 +6,7 @@ from functools import wraps
 from weakref import WeakValueDictionary
 
 from django.conf import settings
-from django.core.signals import request_started, request_finished
+from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
