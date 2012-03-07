@@ -6,7 +6,7 @@ django-watson changelog
 ------------------
 
 * Added in SearchContextMiddleware.
-* Removed of potentially buggy automatic wrapping of entire request in a search context.
+* Removed potentially unreliable automatic wrapping of entire request in a search context.
 
 
 1.0.2 - 07/03/2012
