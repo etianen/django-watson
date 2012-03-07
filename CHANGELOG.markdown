@@ -2,6 +2,12 @@ django-watson changelog
 ==========================
 
 
+1.0.2 - 07/03/2012
+------------------
+
+* Support for prefix matching in search queries.
+
+
 1.0.1 - 06/02/2012
 ------------------
 
