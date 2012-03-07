@@ -2,6 +2,13 @@ django-watson changelog
 ==========================
 
 
+1.1.0 - UNRELEASED
+------------------
+
+* Added in SearchContextMiddleware.
+* Removed of potentially buggy automatic wrapping of entire request in a search context.
+
+
 1.0.2 - 07/03/2012
 ------------------
 
