@@ -43,6 +43,11 @@ class SearchAdmin(admin.ModelAdmin):
     
     search_engine = admin_search_engine
     
+    @property
+    def search_context_manager(self):
+        """The search context manager used by this SearchAdmin."""
+        return self.search_engine._search_context_manager
+    
     def __init__(self, *args, **kwargs):
         """Initializes the search admin."""
         super(SearchAdmin, self).__init__(*args, **kwargs)
@@ -52,6 +57,11 @@ class SearchAdmin(admin.ModelAdmin):
                 raise ValueError("SearchAdmin does not support search fields prefixed with '^', '=' or '@'")
         # Register with the search engine.
         self.register_model_with_watson()
+        # Set up revision contexts on key methods, just in case.
+        self.add_view = self.search_context_manager.update_index()(self.add_view)
+        self.change_view = self.search_context_manager.update_index()(self.change_view)
+        self.delete_view = self.search_context_manager.update_index()(self.delete_view)
+        self.changelist_view = self.search_context_manager.update_index()(self.changelist_view)
     
     def register_model_with_watson(self):
         """Registers this admin class' model with django-watson."""

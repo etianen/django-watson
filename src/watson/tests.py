@@ -115,7 +115,6 @@ class SearchTestBase(TestCase):
     
     model2 = WatsonTestModel2
 
-    @watson.update_index()
     def setUp(self):
         # If migrations are off, then this is needed to get the indices installed. It has to
         # be called in the setUp() method, but multiple invocations should be safe.
@@ -177,9 +176,8 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 4)
         
     def testBuildWatsonCommand(self):
-        # This update won't take affect, because no search context is active.
-        self.test11.title = "fooo"
-        self.test11.save()
+        # Hack a change into the model using a bulk update, which doesn't send signals.
+        WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo")
         # Test that no update has happened.
         self.assertEqual(watson.search("fooo").count(), 0)
         # Run the rebuild command.
@@ -189,17 +187,22 @@ class InternalsTest(SearchTestBase):
         
     def testUpdateSearchIndex(self):
         # Update a model and make sure that the search results match.
-        with watson.update_index():
-            self.test11.title = "fooo"
-            self.test11.save()
+        self.test11.title = "fooo"
+        self.test11.save()
         # Test a search that should get one model.
         exact_search = watson.search("fooo")
         self.assertEqual(len(exact_search), 1)
         self.assertEqual(exact_search[0].title, "fooo")
         # Delete a model and make sure that the search results match.
-        with watson.update_index():
-            self.test11.delete()
+        self.test11.delete()
         self.assertEqual(watson.search("fooo").count(), 0)
+    
+    def testSearchIndexUpdateDeferredByContext(self):
+        with watson.update_index():
+            self.test11.title = "fooo"
+            self.test11.save()
+            self.assertEqual(watson.search("fooo").count(), 0)
+        self.assertEqual(watson.search("fooo").count(), 1)
     
     def testSearchIndexUpdateAbandonedOnError(self):
         try:
@@ -396,26 +399,23 @@ class LiveFilterSearchTest(SearchTest):
         # Make sure that there are four to find!
         self.assertEqual(watson.search("tItle Content Description").count(), 4)
         # Unpublish two objects.
-        with watson.update_index():
-            self.test11.is_published = False
-            self.test11.save()
-            self.test21.is_published = False
-            self.test21.save()
+        self.test11.is_published = False
+        self.test11.save()
+        self.test21.is_published = False
+        self.test21.save()
         # This should return 4, but two of them are unpublished.
         self.assertEqual(watson.search("tItle Content Description").count(), 2)
         
     def testCanOverridePublication(self):
         # Unpublish two objects.
-        with watson.update_index():
-            self.test11.is_published = False
-            self.test11.save()
+        self.test11.is_published = False
+        self.test11.save()
         # This should still return 4, since we're overriding the publication.
         self.assertEqual(watson.search("tItle Content Description", models=(WatsonTestModel2, WatsonTestModel1._base_manager.all(),)).count(), 4)
         
         
 class RankingTest(SearchTestBase):
 
-    @watson.update_index()
     def setUp(self):
         super(RankingTest, self).setUp()
         self.test11.title += " fooo baar fooo"
