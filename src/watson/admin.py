@@ -12,18 +12,14 @@ admin_search_engine = SearchEngine("admin")
 class WatsonSearchChangeList(ChangeList):
 
     """A change list that takes advantage of django-watson full text search."""
-    
-    def __init__(self, request, model, list_display, list_display_links, list_filter, date_hierarchy, search_fields, list_select_related, list_per_page, list_editable, model_admin):
-        """Initializes the search engine."""
-        super(WatsonSearchChangeList, self).__init__(request, model, list_display, list_display_links, list_filter, date_hierarchy, search_fields, list_select_related, list_per_page, list_editable, model_admin)
         
-    def get_query_set(self):
+    def get_query_set(self, *args, **kwargs):
         """Creates the query set."""
         # Do the basic searching.
         search_fields = self.search_fields
         self.search_fields = ()
         try:
-            qs = super(WatsonSearchChangeList, self).get_query_set()
+            qs = super(WatsonSearchChangeList, self).get_query_set(*args, **kwargs)
         finally:
             self.search_fields = search_fields
         # Do the full text searching.
