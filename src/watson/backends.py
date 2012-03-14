@@ -2,7 +2,6 @@
 
 import re, abc
 
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models import Q
@@ -427,6 +426,21 @@ class MySQLSearchBackend(SearchBackend):
             select_params = (search_text, search_text, search_text,),
             order_by = ("-watson_rank",),
         )
+
+
+def get_postgresql_version(connection):
+    """Returns the version number of the PostgreSQL connection."""
+    try:
+        from django.db.backends.postgresql.version import get_version  # Django 1.3
+    except ImportError:
+        # Use the Django 1.4 method.
+        from django.db.backends.postgresql_psycopg2.version import get_version
+        return get_version(connection)
+    else:
+        # Use the Django 1.3 method. 
+        cursor = connection.cursor()
+        major, major2, minor = get_version(cursor)
+        return major * 10000 + major2 * 100 + minor
         
         
 class AdaptiveSearchBackend(SearchBackend):
@@ -438,15 +452,12 @@ class AdaptiveSearchBackend(SearchBackend):
     
     def __new__(cls):
         """Guess the correct search backend and initialize it."""
-        database_engine = settings.DATABASES["default"]["ENGINE"]
-        if database_engine.endswith("postgresql_psycopg2") or database_engine.endswith("postgresql"):
-            from django.db.backends.postgresql.version import get_version
-            cursor = connection.cursor()
-            version = get_version(cursor)
-            if version > (8, 4, 0):
+        if connection.vendor == "postgresql":
+            version = get_postgresql_version(connection)
+            if version > 80400:
                 return PostgresSearchBackend()
-            if version > (8, 3, 0):
+            if version > 80300:
                 return PostgresLegacySearchBackend()
-        if database_engine.endswith("mysql"):
+        if connection.vendor == "mysql":
             return MySQLSearchBackend()
         return RegexSearchBackend()
