@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models import Q
+from django.utils.encoding import force_unicode
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -15,6 +16,14 @@ def regex_from_word(word):
     return u"(\s{word})|(^{word})".format(
         word = re.escape(word),
     )
+    
+    
+def make_escaper(badchars):
+    """Creates an efficient escape function that strips the given characters from the string."""
+    translation_table = dict((ord(c), None) for c in badchars)
+    def escaper(text):
+        return force_unicode(text, errors="ignore").translate(translation_table)
+    return escaper
 
 
 class SearchBackend(object):
@@ -150,6 +159,9 @@ class RegexSearchBackend(RegexSearchMixin, SearchBackend):
     """A search backend that works with SQLite3."""
 
 
+escape_postgres_query_chars = make_escaper(u"():|!&*")
+
+
 class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
@@ -159,7 +171,7 @@ class PostgresSearchBackend(SearchBackend):
         return u" & ".join(
             u"{}:*".format(word)
             for word
-            in text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split()
+            in escape_postgres_query_chars(text).split()
         )
     
     def is_installed(self):
@@ -288,7 +300,7 @@ class PostgresLegacySearchBackend(PostgresSearchBackend):
     
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-        return u" & ".join(text.replace(u"(", u"").replace(u")", u"").replace(u":", u"").replace(u"|", u"").replace("!", "").split())
+        return u" & ".join(escape_postgres_query_chars(text).split())
 
 
 class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBackend):
@@ -302,16 +314,17 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
     """
         
 
+escape_mysql_boolean_query_chars = make_escaper(u"+-<>()*\"")
+
 def escape_mysql_boolean_query(search_text):
     return u" ".join(
         u'+{word}*'.format(
             word = word,
         )
-        for word in search_text.replace(u"+", u"").replace(u"-", u"").replace(u"<", u"").replace(u">", u"").replace(u"(", u"").replace(u")", u"").replace(u"*", u"").replace(u'"', u"").split()
+        for word in escape_mysql_boolean_query_chars(search_text).split()
     )
     
 
-        
 class MySQLSearchBackend(SearchBackend):
 
     def is_installed(self):
