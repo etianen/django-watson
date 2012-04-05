@@ -2,11 +2,14 @@ django-watson changelog
 ==========================
 
 
-1.1.0 - UNRELEASED
+1.1.0 - 05/04/2012
 ------------------
 
+* Django 1.4 admin compatibility.
+* Improved efficiency of large search index updates using update and bulk_create (when available).
 * Added in SearchContextMiddleware.
 * Removed potentially unreliable automatic wrapping of entire request in a search context.
+* Improved escaping of PostgreSQL query characters.
 
 
 1.0.2 - 07/03/2012
