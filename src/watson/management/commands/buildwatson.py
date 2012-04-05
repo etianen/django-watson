@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 
-from watson.registration import SearchEngine
+from watson.registration import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
 
 
@@ -25,10 +25,11 @@ class Command(NoArgsCommand):
             registered_models = search_engine.get_registered_models()
             # Rebuild the index for all registered models.
             refreshed_model_count = 0
+            entries_to_create = []
             for model in registered_models:
                 local_refreshed_model_count = 0
                 for obj in model._default_manager.all().iterator():
-                    search_engine.update_obj_index(obj)
+                    entries_to_create.extend(search_engine._update_obj_index_iter(obj))
                     local_refreshed_model_count += 1
                     if verbosity >= 3:
                         print u"Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
@@ -43,6 +44,7 @@ class Command(NoArgsCommand):
                         local_refreshed_model_count = local_refreshed_model_count,
                         engine_slug = engine_slug,
                     )
+            _bulk_save_search_entries(entries_to_create)
             if verbosity == 1:
                 print u"Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
                     refreshed_model_count = refreshed_model_count,

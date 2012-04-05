@@ -1,6 +1,7 @@
 """Adapters for registering models with django-watson."""
 
 import sys
+from itertools import chain
 from threading import local
 from functools import wraps
 from weakref import WeakValueDictionary
@@ -156,6 +157,17 @@ class SearchContextError(Exception):
     """Something went wrong with the search context management."""
 
 
+def _bulk_save_search_entries(search_entries):
+    """Creates the given search entry data in the most efficient way possible."""
+    if search_entries:
+        if hasattr(SearchEntry.objects, "bulk_create"):
+            search_entries = list(search_entries)
+            SearchEntry.objects.bulk_create(search_entries)
+        else:
+            for search_entry in search_entries:
+                search_entry.save()
+
+
 class SearchContextManager(local):
 
     """A thread-local context manager used to manage saving search data."""
@@ -203,8 +215,7 @@ class SearchContextManager(local):
         # Save all the models.
         tasks, is_invalid = self._stack.pop()
         if not is_invalid:
-            for engine, obj in tasks:
-                engine.update_obj_index(obj)
+            _bulk_save_search_entries(list(chain.from_iterable(engine._update_obj_index_iter(obj) for engine, obj in tasks)))
     
     # Context management.
             
@@ -384,8 +395,8 @@ class SearchEngine(object):
             )
         return object_id_int, search_entries
     
-    def update_obj_index(self, obj):
-        """Updates the search index for the given obj."""
+    def _update_obj_index_iter(self, obj):
+        """Either updates the given object index, or yields an unsaved search entry."""
         model = obj.__class__
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
@@ -410,10 +421,14 @@ class SearchEngine(object):
                 ("object_id", object_id),
                 ("object_id_int", object_id_int),
             ))
-            SearchEntry.objects.create(**search_entry_data)
+            yield SearchEntry(**search_entry_data)
         elif update_count > 1:
             # Oh no! Somehow we've got duplicated search entries!
             search_entries.exclude(id=search_entries[0].id).delete()
+    
+    def update_obj_index(self, obj):
+        """Updates the search index for the given obj."""
+        _bulk_save_search_entries(list(self._update_obj_index_iter(obj)))
         
     # Signalling hooks.
             
