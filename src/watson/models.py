@@ -1,7 +1,5 @@
 """Models used by django-watson."""
 
-import base64
-
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -77,15 +75,6 @@ class SearchEntry(models.Model):
         meta_value = json.loads(self.meta_encoded)
         setattr(self, META_CACHE_KEY, meta_value)
         return meta_value
-        
-    @meta.setter
-    def meta(self, meta_value):
-        """Sets the meta information stored with the search entry."""
-        # Remove any cached value.
-        if hasattr(self, META_CACHE_KEY):
-            delattr(self, META_CACHE_KEY)
-        # Set the meta.
-        self.meta_encoded = json.dumps(meta_value)
         
     def get_absolute_url(self):
         """Returns the URL of the referenced object."""

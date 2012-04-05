@@ -74,10 +74,6 @@ class SearchBackend(object):
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
-    
-    def save_search_entry(self, search_entry, obj, adapter):
-        """Saves the given search entry in the database."""
-        search_entry.save()
 
 
 class RegexSearchMixin(object):

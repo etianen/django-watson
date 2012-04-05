@@ -15,6 +15,7 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
 from django.utils.importlib import import_module
+from django.utils import simplejson as json
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -389,29 +390,30 @@ class SearchEngine(object):
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
         object_id = unicode(obj.pk)
+        # Create the search entry data.
+        search_entry_data = {
+            "engine_slug": self._engine_slug,
+            "title": adapter.get_title(obj),
+            "description": adapter.get_description(obj),
+            "content": adapter.get_content(obj),
+            "url": adapter.get_url(obj),
+            "meta_encoded": json.dumps(adapter.get_meta(obj)),
+        }
         # Try to get the existing search entry.
         object_id_int, search_entries = self._get_entries_for_obj(obj)
-        try:
-            search_entry = search_entries.get()
-        except SearchEntry.DoesNotExist:
-            search_entry = SearchEntry(
-                content_type = content_type,
-                object_id = object_id,
-                object_id_int = object_id_int,
-            )
-        except SearchEntry.MultipleObjectsReturned:
-            # Oh no! Some non-transactional database has messed up!
-            search_entry = search_entries[0]
-            search_entries.exclude(id=search_entry.id).delete()
-        # Store data.
-        search_entry.engine_slug = self._engine_slug
-        search_entry.title = adapter.get_title(obj)
-        search_entry.description = adapter.get_description(obj)
-        search_entry.content = adapter.get_content(obj)
-        search_entry.url = adapter.get_url(obj)
-        search_entry.meta = adapter.get_meta(obj)
-        # Pass on the entry for final processing to the search backend.
-        get_backend().save_search_entry(search_entry, obj, adapter)
+        # Attempt to update the search entries.
+        update_count = search_entries.update(**search_entry_data)
+        if update_count == 0:
+            # This is the first time the entry was created.
+            search_entry_data.update((
+                ("content_type", content_type),
+                ("object_id", object_id),
+                ("object_id_int", object_id_int),
+            ))
+            SearchEntry.objects.create(**search_entry_data)
+        elif update_count > 1:
+            # Oh no! Somehow we've got duplicated search entries!
+            search_entries.exclude(id=search_entries[0].id).delete()
         
     # Signalling hooks.
             
