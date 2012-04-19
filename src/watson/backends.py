@@ -160,7 +160,10 @@ escape_postgres_query_chars = make_escaper(u"():|!&*")
 class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
-    
+
+    config = "pg_catalog.english"
+    """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
+
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
         return u" & ".join(
@@ -200,28 +203,30 @@ class PostgresSearchBackend(SearchBackend):
             -- Create the search index.
             ALTER TABLE watson_searchentry ADD COLUMN search_tsv tsvector NOT NULL;
             CREATE INDEX watson_searchentry_search_tsv ON watson_searchentry USING gin(search_tsv);
-            
+
             -- Create the trigger function.
             CREATE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
             begin
                 new.search_tsv :=
-                    setweight(to_tsvector('pg_catalog.english', coalesce(new.title, '')), 'A') ||
-                    setweight(to_tsvector('pg_catalog.english', coalesce(new.description, '')), 'C') ||
-                    setweight(to_tsvector('pg_catalog.english', coalesce(new.content, '')), 'D');
+                    setweight(to_tsvector('{config}', coalesce(new.title, '')), 'A') ||
+                    setweight(to_tsvector('{config}', coalesce(new.description, '')), 'C') ||
+                    setweight(to_tsvector('{config}', coalesce(new.content, '')), 'D');
                 return new;
             end
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER watson_searchentry_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
-        """)
-        
+        """.format(
+            config = self.config
+        ))
+
     def do_uninstall(self):
         """Executes the PostgreSQL specific SQL code to uninstall django-watson."""
         connection.cursor().execute("""
             ALTER TABLE watson_searchentry DROP COLUMN search_tsv;
-            
+
             DROP TRIGGER watson_searchentry_trigger ON watson_searchentry;
-            
+
             DROP FUNCTION watson_searchentry_trigger_handler();
         """)
         
@@ -234,7 +239,9 @@ class PostgresSearchBackend(SearchBackend):
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
-            where = ("search_tsv @@ to_tsquery(%s)",),
+            where = ("search_tsv @@ to_tsquery('{config}', %s)".format(
+                config = self.config
+            ),),
             params = (self.escape_postgres_query(search_text),),
         )
         
@@ -242,7 +249,9 @@ class PostgresSearchBackend(SearchBackend):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(search_tsv, to_tsquery(%s))",
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                    config = self.config
+                ),
             },
             select_params = (self.escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
@@ -261,7 +270,9 @@ class PostgresSearchBackend(SearchBackend):
             tables = ("watson_searchentry",),
             where = (
                 "watson_searchentry.engine_slug = %s",
-                "watson_searchentry.search_tsv @@ to_tsquery(%s)",
+                "watson_searchentry.search_tsv @@ to_tsquery('{config}', %s)".format(
+                    config = self.config
+                ),
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
@@ -276,7 +287,9 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery(%s))",
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                    config = self.config
+                ),
             },
             select_params = (self.escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
