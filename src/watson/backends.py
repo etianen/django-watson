@@ -161,7 +161,7 @@ class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
 
-    config = "pg_catalog.english"
+    search_config = "pg_catalog.english"
     """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
 
     def escape_postgres_query(self, text):
@@ -208,16 +208,16 @@ class PostgresSearchBackend(SearchBackend):
             CREATE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
             begin
                 new.search_tsv :=
-                    setweight(to_tsvector('{config}', coalesce(new.title, '')), 'A') ||
-                    setweight(to_tsvector('{config}', coalesce(new.description, '')), 'C') ||
-                    setweight(to_tsvector('{config}', coalesce(new.content, '')), 'D');
+                    setweight(to_tsvector('{search_config}', coalesce(new.title, '')), 'A') ||
+                    setweight(to_tsvector('{search_config}', coalesce(new.description, '')), 'C') ||
+                    setweight(to_tsvector('{search_config}', coalesce(new.content, '')), 'D');
                 return new;
             end
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER watson_searchentry_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
         """.format(
-            config = self.config
+            search_config = self.search_config
         ))
 
     def do_uninstall(self):
@@ -239,8 +239,8 @@ class PostgresSearchBackend(SearchBackend):
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
-            where = ("search_tsv @@ to_tsquery('{config}', %s)".format(
-                config = self.config
+            where = ("search_tsv @@ to_tsquery('{search_config}', %s)".format(
+                search_config = self.search_config
             ),),
             params = (self.escape_postgres_query(search_text),),
         )
@@ -249,8 +249,8 @@ class PostgresSearchBackend(SearchBackend):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
-                    config = self.config
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
+                    search_config = self.search_config
                 ),
             },
             select_params = (self.escape_postgres_query(search_text),),
@@ -270,8 +270,8 @@ class PostgresSearchBackend(SearchBackend):
             tables = ("watson_searchentry",),
             where = (
                 "watson_searchentry.engine_slug = %s",
-                "watson_searchentry.search_tsv @@ to_tsquery('{config}', %s)".format(
-                    config = self.config
+                "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
+                    search_config = self.search_config
                 ),
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
@@ -287,8 +287,8 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
-                    config = self.config
+                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
+                    search_config = self.search_config
                 ),
             },
             select_params = (self.escape_postgres_query(search_text),),
