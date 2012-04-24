@@ -3,7 +3,7 @@
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
 
-from watson.registration import SearchEngine
+from watson.registration import SearchEngine, SearchAdapter
 
 
 admin_search_engine = SearchEngine("admin")
@@ -39,6 +39,8 @@ class SearchAdmin(admin.ModelAdmin):
     
     search_engine = admin_search_engine
     
+    search_adapter_cls = SearchAdapter
+    
     @property
     def search_context_manager(self):
         """The search context manager used by this SearchAdmin."""
@@ -62,7 +64,7 @@ class SearchAdmin(admin.ModelAdmin):
     def register_model_with_watson(self):
         """Registers this admin class' model with django-watson."""
         if not self.search_engine.is_registered(self.model) and self.search_fields:
-            self.search_engine.register(self.model, fields=self.search_fields)
+            self.search_engine.register(self.model, fields=self.search_fields, adapter_cls=self.search_adapter_cls)
     
     def get_changelist(self, request, **kwargs):
         """Returns the ChangeList class for use on the changelist page."""
