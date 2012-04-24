@@ -6,6 +6,7 @@ that are 3 letters or fewer. Thus, the standard metasyntactic variables in
 these tests have been amended to 'fooo' and 'baar'. Ho hum.
 """
 
+import os
 from unittest import skipUnless
 
 from django.db import models
@@ -514,6 +515,10 @@ class AdminIntegrationTest(SearchTestBase):
     urls = "watson.tests"
     
     def setUp(self):
+        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
+        settings.TEMPLATE_DIRS = (
+            os.path.join(os.path.dirname(admin.__file__), "templates"),
+        )
         super(AdminIntegrationTest, self).setUp()
         self.user = User(
             username = "foo",
@@ -544,6 +549,7 @@ class AdminIntegrationTest(SearchTestBase):
         super(AdminIntegrationTest, self).tearDown()
         self.user.delete()
         del self.user
+        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
         
         
 class SiteSearchTest(SearchTestBase):
