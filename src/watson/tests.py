@@ -567,6 +567,13 @@ class SiteSearchTest(SearchTestBase):
 
     urls = "watson.tests"
     
+    def setUp(self):
+        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
+        settings.TEMPLATE_DIRS = (
+            os.path.join(os.path.dirname(admin.__file__), "templates"),
+        )
+        super(SiteSearchTest, self).setUp()
+    
     def testSiteSearch(self):
         # Test a search than should find everything.
         response = self.client.get("/simple/?q=title")
@@ -644,4 +651,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search with an invalid page.
         response = self.client.get("/custom/json/?fooo=title&page=200")
         results = set(result["title"] for result in json.loads(response.content)["results"])
-        self.assertEqual(len(results), 0)
+        
+    def tearDown(self):
+        super(SiteSearchTest, self).tearDown()
+        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
