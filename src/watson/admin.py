@@ -28,14 +28,9 @@ class WatsonSearchChangeList(ChangeList):
         return qs
 
 
-class SearchAdmin(admin.ModelAdmin):
+class SearchAdminMixin(object):
 
-    """
-    A ModelAdmin subclass that provides full-text search integration.
-    
-    Subclass this admin class and specify a tuple of search_fields for instant
-    integration!
-    """
+    """Mixin for SearchAdmin functionality."""
     
     search_engine = admin_search_engine
     
@@ -48,7 +43,7 @@ class SearchAdmin(admin.ModelAdmin):
     
     def __init__(self, *args, **kwargs):
         """Initializes the search admin."""
-        super(SearchAdmin, self).__init__(*args, **kwargs)
+        super(SearchAdminMixin, self).__init__(*args, **kwargs)
         # Check that the search fields are valid.
         for search_field in self.search_fields or ():
             if search_field[0] in ("^", "@", "="):
@@ -69,3 +64,13 @@ class SearchAdmin(admin.ModelAdmin):
     def get_changelist(self, request, **kwargs):
         """Returns the ChangeList class for use on the changelist page."""
         return WatsonSearchChangeList
+    
+    
+class SearchAdmin(SearchAdminMixin, admin.ModelAdmin):
+    
+    """
+    A ModelAdmin subclass that provides full-text search integration.
+    
+    Subclass this admin class and specify a tuple of search_fields for instant
+    integration!
+    """
