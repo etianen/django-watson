@@ -650,7 +650,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertTrue("title model2 instance22" in results)
         # Test a search with an invalid page.
         response = self.client.get("/custom/json/?fooo=title&page=200")
-        results = set(result["title"] for result in json.loads(response.content)["results"])
+        self.assertEqual(response.status_code, 404)
         
     def tearDown(self):
         super(SiteSearchTest, self).tearDown()
