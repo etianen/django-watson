@@ -1,0 +1,8 @@
+<article>
+    <h1>
+        <a href="{{result.url}}">{{result.title}}</a>
+    </h1>
+    {% if result.description %}
+        {{result.description|linebreaks}}
+    {% endif %}
+</article>
