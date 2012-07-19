@@ -3,12 +3,12 @@ from distutils.core import setup
 
 setup(
     name = "django-watson",
-    version = "1.1.0",
+    version = "1.1.1",
     description = "Full-text multi-table search application for Django. Easy to install and use, with good performance.",
     author = "Dave Hall",
     author_email = "dave@etianen.com",
     url = "http://github.com/etianen/django-watson",
-    download_url = "http://github.com/downloads/etianen/django-watson/django-watson-1.1.0.tar.gz",
+    download_url = "http://github.com/downloads/etianen/django-watson/django-watson-1.1.1.tar.gz",
     zip_safe = False,
     packages = [
         "watson",

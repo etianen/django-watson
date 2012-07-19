@@ -1,6 +1,13 @@
 django-watson changelog
 ==========================
 
+1.1.1 - 19/07/2012
+------------------
+
+* Ability to use a custom search adapter class in SearchAdmin.
+* Template tag helpers for search results.
+* Ability to specify search configuration for PostgreSQL backend.
+
 
 1.1.0 - 05/04/2012
 ------------------
