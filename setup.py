@@ -16,6 +16,7 @@ setup(
         "watson.management",
         "watson.management.commands",
         "watson.migrations",
+        "watson.templatetags",
     ],
     package_dir = {
         "": "src",
