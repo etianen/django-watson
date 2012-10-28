@@ -154,7 +154,7 @@ class RegexSearchBackend(RegexSearchMixin, SearchBackend):
     """A search backend that works with SQLite3."""
 
 
-escape_postgres_query_chars = make_escaper(u"():|!&*")
+escape_postgres_query_chars = make_escaper(u"():|!&*'")
 
 
 class PostgresSearchBackend(SearchBackend):
