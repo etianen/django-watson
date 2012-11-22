@@ -205,7 +205,7 @@ class PostgresSearchBackend(SearchBackend):
             CREATE INDEX watson_searchentry_search_tsv ON watson_searchentry USING gin(search_tsv);
 
             -- Create the trigger function.
-            CREATE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
+            CREATE OR REPLACE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
             begin
                 new.search_tsv :=
                     setweight(to_tsvector('{search_config}', coalesce(new.title, '')), 'A') ||
