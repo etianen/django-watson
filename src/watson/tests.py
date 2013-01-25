@@ -12,7 +12,10 @@ from unittest import skipUnless
 from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
-from django.conf.urls.defaults import *
+try:
+    from django.conf.urls import *
+except ImportError:  # Django<1.4
+    from django.conf.urls.defaults import *
 from django.conf import settings
 from django.contrib import admin
 from django.contrib.auth.models import User
