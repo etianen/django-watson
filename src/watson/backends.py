@@ -26,7 +26,7 @@ def make_escaper(badchars):
     return escaper
 
 
-class SearchBackend(with_metaclass(abc.ABCMeta)):
+class SearchBackend(six.with_metaclass(abc.ABCMeta)):
 
     """Base class for all search backends."""
     
