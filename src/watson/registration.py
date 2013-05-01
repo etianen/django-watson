@@ -14,7 +14,7 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 from django.utils.importlib import import_module
 from django.utils import simplejson as json
@@ -66,11 +66,11 @@ class SearchAdapter(object):
         # Look up recursive fields.
         if len(name_parts) == 2:
             if isinstance(value, (QuerySet, models.Manager)):
-                return u" ".join(force_unicode(self._resolve_field(obj, name_parts[1])) for obj in value.all())
+                return u" ".join(force_text(self._resolve_field(obj, name_parts[1])) for obj in value.all())
             return self._resolve_field(value, name_parts[1])
         # Resolve querysets.
         if isinstance(value, (QuerySet, models.Manager)):
-            value = u" ".join(force_unicode(related) for related in value.all())
+            value = u" ".join(force_text(related) for related in value.all())
         # Resolution complete!
         return value
     
@@ -86,9 +86,9 @@ class SearchAdapter(object):
         
         You can access the title of the search entry as `entry.title` in your search results.
         
-        The default implementation returns `force_unicode(obj)`.
+        The default implementation returns `force_text(obj)`.
         """
-        return force_unicode(obj)
+        return force_text(obj)
         
     def get_description(self, obj):
         """
@@ -117,7 +117,7 @@ class SearchAdapter(object):
         field_names = (field_name for field_name in field_names if field_name not in self.exclude)
         # Create the text.
         return self.prepare_content(u" ".join(
-            force_unicode(self._resolve_field(obj, field_name))
+            force_text(self._resolve_field(obj, field_name))
             for field_name in field_names
         ))
     
@@ -362,7 +362,7 @@ class SearchEngine(object):
         
     def get_registered_models(self):
         """Returns a sequence of models that have been registered with this search engine."""
-        return self._registered_models.keys()
+        return list(self._registered_models.keys())
     
     def get_adapter(self, model):
         """Returns the adapter associated with the given model."""
@@ -376,7 +376,7 @@ class SearchEngine(object):
         """Returns a queryset of entries associate with the given obj."""
         model = obj.__class__
         content_type = ContentType.objects.get_for_model(model)
-        object_id = force_unicode(obj.pk)
+        object_id = force_text(obj.pk)
         # Get the basic list of search entries.
         search_entries = SearchEntry.objects.filter(
             content_type = content_type,
@@ -401,7 +401,7 @@ class SearchEngine(object):
         model = obj.__class__
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
-        object_id = force_unicode(obj.pk)
+        object_id = force_text(obj.pk)
         # Create the search entry data.
         search_entry_data = {
             "engine_slug": self._engine_slug,

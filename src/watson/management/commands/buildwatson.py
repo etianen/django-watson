@@ -32,24 +32,24 @@ class Command(NoArgsCommand):
                     entries_to_create.extend(search_engine._update_obj_index_iter(obj))
                     local_refreshed_model_count += 1
                     if verbosity >= 3:
-                        print u"Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
+                        print(u"Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
                             model = model._meta.verbose_name,
                             obj = obj,
                             engine_slug = engine_slug,
-                        )
+                        ))
                 refreshed_model_count += local_refreshed_model_count
                 if verbosity == 2:
-                    print u"Refreshed {local_refreshed_model_count} {model} search entry(s) in {engine_slug!r} search engine.".format(
+                    print(u"Refreshed {local_refreshed_model_count} {model} search entry(s) in {engine_slug!r} search engine.".format(
                         model = model._meta.verbose_name,
                         local_refreshed_model_count = local_refreshed_model_count,
                         engine_slug = engine_slug,
-                    )
+                    ))
             _bulk_save_search_entries(entries_to_create)
             if verbosity == 1:
-                print u"Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
+                print(u"Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
                     refreshed_model_count = refreshed_model_count,
                     engine_slug = engine_slug,
-                )
+                ))
             # Clean out any search entries that exist for stale content types.
             valid_content_types = [ContentType.objects.get_for_model(model) for model in registered_models]
             stale_entries = SearchEntry.objects.filter(
@@ -61,7 +61,7 @@ class Command(NoArgsCommand):
             if stale_entry_count > 0:
                 stale_entries.delete()
             if verbosity >= 1:
-                print u"Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
+                print(u"Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
                     stale_entry_count = stale_entry_count,
                     engine_slug = engine_slug,
-                )
+                ))

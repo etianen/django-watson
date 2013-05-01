@@ -5,7 +5,8 @@ import re, abc
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
 from django.db.models import Q
-from django.utils.encoding import force_unicode
+from django.utils.encoding import force_text
+from django.utils import six
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -21,15 +22,13 @@ def make_escaper(badchars):
     """Creates an efficient escape function that strips the given characters from the string."""
     translation_table = dict((ord(c), None) for c in badchars)
     def escaper(text):
-        return force_unicode(text, errors="ignore").translate(translation_table)
+        return force_text(text, errors="ignore").translate(translation_table)
     return escaper
 
 
-class SearchBackend(object):
+class SearchBackend(with_metaclass(abc.ABCMeta)):
 
     """Base class for all search backends."""
-    
-    __metaclass__ = abc.ABCMeta
     
     def is_installed(self):
         """Checks whether django-watson is installed."""
@@ -76,11 +75,9 @@ class SearchBackend(object):
         raise NotImplementedError
 
 
-class RegexSearchMixin(object):
+class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
     
     """Mixin to adding regex search to a search backend."""
-    
-    __metaclass__ = abc.ABCMeta
     
     supports_prefix_matching = True
     
