@@ -22,6 +22,7 @@ from django.contrib.auth.models import User
 from django.http import HttpResponseNotFound, HttpResponseServerError
 from django import template
 from django.utils import simplejson as json
+from django.utils.encoding import force_text
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
@@ -602,7 +603,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find everything.
         response = self.client.get("/simple/json/?q=title")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
-        results = set(result["title"] for result in json.loads(response.content)["results"])
+        results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
         self.assertEqual(len(results), 4)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)
@@ -645,7 +646,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find everything.
         response = self.client.get("/custom/json/?fooo=title&page=last")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
-        results = set(result["title"] for result in json.loads(response.content)["results"])
+        results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
         self.assertEqual(len(results), 4)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)
