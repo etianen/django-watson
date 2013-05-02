@@ -6,6 +6,8 @@ that are 3 letters or fewer. Thus, the standard metasyntactic variables in
 these tests have been amended to 'fooo' and 'baar'. Ho hum.
 """
 
+from __future__ import unicode_literals
+
 import os
 from unittest import skipUnless
 
@@ -444,14 +446,14 @@ class RankingTest(SearchTestBase):
     def testRankingWithSearch(self):
         self.assertEqual(
             [entry.title for entry in watson.search("FOOO")],
-            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12"]
+            ["title model1 instance11 fooo baar fooo", "title model1 instance12"]
         )
             
     @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithFilter(self):
         self.assertEqual(
             [entry.title for entry in watson.filter(WatsonTestModel1, "FOOO")],
-            [u"title model1 instance11 fooo baar fooo", u"title model1 instance12"]
+            ["title model1 instance11 fooo baar fooo", "title model1 instance12"]
         )
 
 

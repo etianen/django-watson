@@ -1,5 +1,7 @@
 """Adapters for registering models with django-watson."""
 
+from __future__ import unicode_literals
+
 import sys
 from itertools import chain
 from threading import local
@@ -66,11 +68,11 @@ class SearchAdapter(object):
         # Look up recursive fields.
         if len(name_parts) == 2:
             if isinstance(value, (QuerySet, models.Manager)):
-                return u" ".join(force_text(self._resolve_field(obj, name_parts[1])) for obj in value.all())
+                return " ".join(force_text(self._resolve_field(obj, name_parts[1])) for obj in value.all())
             return self._resolve_field(value, name_parts[1])
         # Resolve querysets.
         if isinstance(value, (QuerySet, models.Manager)):
-            value = u" ".join(force_text(related) for related in value.all())
+            value = " ".join(force_text(related) for related in value.all())
         # Resolution complete!
         return value
     
@@ -98,9 +100,9 @@ class SearchAdapter(object):
         this should contains a short description of the search entry, it's excellent for providing a summary
         in your search results.
         
-        The default implementation returns `u""`.
+        The default implementation returns `""`.
         """
-        return u""
+        return ""
         
     def get_content(self, obj):
         """
@@ -116,7 +118,7 @@ class SearchAdapter(object):
         # Exclude named fields.
         field_names = (field_name for field_name in field_names if field_name not in self.exclude)
         # Create the text.
-        return self.prepare_content(u" ".join(
+        return self.prepare_content(" ".join(
             force_text(self._resolve_field(obj, field_name))
             for field_name in field_names
         ))
@@ -125,7 +127,7 @@ class SearchAdapter(object):
         """Return the URL of the given obj."""
         if hasattr(obj, "get_absolute_url"):
             return obj.get_absolute_url()
-        return u""
+        return ""
     
     def get_meta(self, obj):
         """Returns a dictionary of meta information about the given obj."""
@@ -331,7 +333,8 @@ class SearchEngine(object):
             ))
         # Perform any customization.
         if field_overrides:
-            adapter_cls = type("Custom" + adapter_cls.__name__, (adapter_cls,), field_overrides)
+            # Conversion to str is needed because Python 2 doesn't accept unicode for class name
+            adapter_cls = type(str("Custom") + adapter_cls.__name__, (adapter_cls,), field_overrides)
         # Perform the registration.
         adapter_obj = adapter_cls(model)
         self._registered_models[model] = adapter_obj

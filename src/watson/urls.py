@@ -1,5 +1,7 @@
 """URLs for the built-in site search functionality."""
 
+from __future__ import unicode_literals
+
 try:
     from django.conf.urls import *
 except ImportError:  # Django<1.4

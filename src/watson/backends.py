@@ -1,5 +1,7 @@
 """Search backends used by django-watson."""
 
+from __future__ import unicode_literals
+
 import re, abc
 
 from django.contrib.contenttypes.models import ContentType
@@ -13,7 +15,7 @@ from watson.models import SearchEntry, has_int_pk
 
 def regex_from_word(word):
     """Generates a regext from the given search word."""
-    return u"(\s{word})|(^{word})".format(
+    return "(\s{word})|(^{word})".format(
         word = re.escape(word),
     )
     
@@ -99,23 +101,23 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
         pk = model._meta.pk
         id = connection.ops.quote_name(pk.db_column or pk.attname)
         # Add in basic filters.
-        word_query = [u"""
+        word_query = ["""
             ({db_table}.{engine_slug} = %s)
         """, """
             ({db_table}.{content_type_id} = %s)
         """]
         word_kwargs= {
-            u"db_table": db_table,
-            u"model_db_table": model_db_table,
-            u"engine_slug": connection.ops.quote_name(u"engine_slug"),
-            u"title": connection.ops.quote_name(u"title"),
-            u"description": connection.ops.quote_name(u"description"),
-            u"content": connection.ops.quote_name(u"content"),
-            u"content_type_id": connection.ops.quote_name(u"content_type_id"),
-            u"object_id": connection.ops.quote_name(u"object_id"),
-            u"object_id_int": connection.ops.quote_name(u"object_id_int"),
-            u"id": id,
-            u"iregex_operator": connection.operators["iregex"],
+            "db_table": db_table,
+            "model_db_table": model_db_table,
+            "engine_slug": connection.ops.quote_name("engine_slug"),
+            "title": connection.ops.quote_name("title"),
+            "description": connection.ops.quote_name("description"),
+            "content": connection.ops.quote_name("content"),
+            "content_type_id": connection.ops.quote_name("content_type_id"),
+            "object_id": connection.ops.quote_name("object_id"),
+            "object_id_int": connection.ops.quote_name("object_id_int"),
+            "id": id,
+            "iregex_operator": connection.operators["iregex"],
         }
         word_args = [
             engine_slug,
@@ -133,12 +135,12 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
         # Add in all words.
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_query.append(u"""
+            word_query.append("""
                 ({db_table}.{title} {iregex_operator} OR {db_table}.{description} {iregex_operator} OR {db_table}.{content} {iregex_operator}) 
             """)
             word_args.extend((regex, regex, regex))
         # Compile the query.
-        full_word_query = u" AND ".join(word_query).format(**word_kwargs)
+        full_word_query = " AND ".join(word_query).format(**word_kwargs)
         return queryset.extra(
             tables = (db_table,),
             where = (full_word_query,),
@@ -151,7 +153,7 @@ class RegexSearchBackend(RegexSearchMixin, SearchBackend):
     """A search backend that works with SQLite3."""
 
 
-escape_postgres_query_chars = make_escaper(u"():|!&*'")
+escape_postgres_query_chars = make_escaper("():|!&*'")
 
 
 class PostgresSearchBackend(SearchBackend):
@@ -163,8 +165,8 @@ class PostgresSearchBackend(SearchBackend):
 
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-        return u" & ".join(
-            u"{0}:*".format(word)
+        return " & ".join(
+            "{0}:*".format(word)
             for word
             in escape_postgres_query_chars(text).split()
         )
@@ -305,7 +307,7 @@ class PostgresLegacySearchBackend(PostgresSearchBackend):
     
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-        return u" & ".join(escape_postgres_query_chars(text).split())
+        return " & ".join(escape_postgres_query_chars(text).split())
 
 
 class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBackend):
@@ -319,11 +321,11 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
     """
         
 
-escape_mysql_boolean_query_chars = make_escaper(u"+-<>()*\"")
+escape_mysql_boolean_query_chars = make_escaper("+-<>()*\"")
 
 def escape_mysql_boolean_query(search_text):
-    return u" ".join(
-        u'+{word}*'.format(
+    return " ".join(
+        '+{word}*'.format(
             word = word,
         )
         for word in escape_mysql_boolean_query_chars(search_text).split()
