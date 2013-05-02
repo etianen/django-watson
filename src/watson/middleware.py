@@ -1,5 +1,7 @@
 """Middleware used by django-watson."""
 
+from __future__ import unicode_literals
+
 from watson.registration import search_context_manager
 
 

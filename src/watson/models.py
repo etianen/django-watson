@@ -1,5 +1,7 @@
 """Models used by django-watson."""
 
+from __future__ import unicode_literals
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic

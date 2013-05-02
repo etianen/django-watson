@@ -1,5 +1,7 @@
 """Template helpers used by watsons search."""
 
+from __future__ import unicode_literals
+
 from django import template
 
 
