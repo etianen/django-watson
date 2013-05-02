@@ -1,5 +1,7 @@
 """Destroys the database indices needed by django-watson."""
 
+from __future__ import unicode_literals
+
 from django.core.management.base import NoArgsCommand
 from django.db import transaction
 

@@ -1,8 +1,11 @@
 """Views used by the built-in site search functionality."""
 
+from __future__ import unicode_literals
+
 from django.shortcuts import redirect
 from django.http import HttpResponse
 from django.utils import simplejson as json
+from django.utils import six
 from django.views import generic
 from django.views.generic.list import BaseListView
 
@@ -39,7 +42,7 @@ class SearchMixin(object):
     
     def get_query(self, request):
         """Parses the query from the request."""
-        return request.GET.get(self.get_query_param(), u"").strip()
+        return request.GET.get(self.get_query_param(), "").strip()
     
     empty_query_redirect = None
     
@@ -62,7 +65,7 @@ class SearchMixin(object):
         context = super(SearchMixin, self).get_context_data(**kwargs)
         context["query"] = self.query
         # Process extra context.
-        for key, value in self.get_extra_context().iteritems():
+        for key, value in six.iteritems(self.get_extra_context()):
             if callable(value):
                 value = value()
             context[key] = value

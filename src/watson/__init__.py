@@ -6,6 +6,8 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
+from __future__ import unicode_literals
+
 from watson.admin import SearchAdmin
 from watson.registration import SearchAdapter, default_search_engine, search_context_manager
 

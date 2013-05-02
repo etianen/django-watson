@@ -25,6 +25,7 @@ setup(
         "watson": [
             "locale/*/LC_MESSAGES/django.*",
             "templates/watson/*.html",
+            "templates/watson/includes/*.html",
         ],
     },
     classifiers=[
