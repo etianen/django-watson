@@ -1,6 +1,7 @@
 """Adapters for registering models with django-watson."""
 
 import sys
+import json
 from itertools import chain
 from threading import local
 from functools import wraps
@@ -16,7 +17,6 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.html import strip_tags
 from django.utils.importlib import import_module
-from django.utils import simplejson as json
 
 from watson.models import SearchEntry, has_int_pk
 

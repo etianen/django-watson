@@ -1,10 +1,9 @@
 """Models used by django-watson."""
 
+import json
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
-from django.utils import simplejson as json
-
 
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""

@@ -1,8 +1,8 @@
 """Views used by the built-in site search functionality."""
 
+import json
 from django.shortcuts import redirect
 from django.http import HttpResponse
-from django.utils import simplejson as json
 from django.views import generic
 from django.views.generic.list import BaseListView
 
