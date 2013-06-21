@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-import sys
+import sys, json
 from itertools import chain, islice
 from threading import local
 from functools import wraps
@@ -19,7 +19,6 @@ from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 from django.utils.importlib import import_module
-from django.utils import simplejson as json
 
 from watson.models import SearchEntry, has_int_pk
 

@@ -2,9 +2,10 @@
 
 from __future__ import unicode_literals
 
+import json
+
 from django.shortcuts import redirect
 from django.http import HttpResponse
-from django.utils import simplejson as json
 from django.utils import six
 from django.views import generic
 from django.views.generic.list import BaseListView
