@@ -3,7 +3,7 @@ from distutils.core import setup
 
 setup(
     name = "django-watson",
-    version = "1.1.1",
+    version = "1.1.2",
     description = "Full-text multi-table search application for Django. Easy to install and use, with good performance.",
     long_description = open("README.markdown").read(),
     author = "Dave Hall",
