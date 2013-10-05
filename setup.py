@@ -9,7 +9,6 @@ setup(
     author = "Dave Hall",
     author_email = "dave@etianen.com",
     url = "http://github.com/etianen/django-watson",
-    download_url = "http://github.com/downloads/etianen/django-watson/django-watson-1.1.1.tar.gz",
     zip_safe = False,
     packages = [
         "watson",
