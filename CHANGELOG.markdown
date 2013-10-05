@@ -1,6 +1,14 @@
 django-watson changelog
 ==========================
 
+1.1.2 - 05/10/2013
+------------------
+
+* More memory-efficient buildwatson command using data chunking.
+* Python 3.3 compatibility (new and experimental!).
+* Various minor bugfixes.
+
+
 1.1.1 - 19/07/2012
 ------------------
 
