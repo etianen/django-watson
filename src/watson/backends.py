@@ -228,6 +228,40 @@ class PostgresSearchBackend(SearchBackend):
 
             DROP FUNCTION watson_searchentry_trigger_handler();
         """)
+
+    def do_upgrade(self):
+        """Executes the PostgreSQL specific SQL code to upgrade django-watson."""
+        connection.cursor().execute("""
+            -- Replace the trigger function.
+            CREATE OR REPLACE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
+            begin
+                new.search_tsv :=
+                    setweight(to_tsvector(coalesce(new.search_config, '{search_config}'), coalesce(new.title, '')), 'A') ||
+                    setweight(to_tsvector(coalesce(new.search_config, '{search_config}'), coalesce(new.description, '')), 'C') ||
+                    setweight(to_tsvector(coalesce(new.search_config, '{search_config}'), coalesce(new.content, '')), 'D');
+                return new;
+            end
+            $$ LANGUAGE plpgsql;
+        """.format(
+            search_config = self.search_config
+        ))
+
+    def do_downgrade(self):
+        """Executes the PostgreSQL specific SQL code to downgrade django-watson."""
+        connection.cursor().execute("""
+            -- Replace the trigger function.
+            CREATE OR REPLACE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
+            begin
+                new.search_tsv :=
+                    setweight(to_tsvector('{search_config}', coalesce(new.title, '')), 'A') ||
+                    setweight(to_tsvector('{search_config}', coalesce(new.description, '')), 'C') ||
+                    setweight(to_tsvector('{search_config}', coalesce(new.content, '')), 'D');
+                return new;
+            end
+            $$ LANGUAGE plpgsql;
+        """.format(
+            search_config = self.search_config
+        ))
         
     requires_installation = True
     
@@ -235,28 +269,28 @@ class PostgresSearchBackend(SearchBackend):
     
     supports_prefix_matching = True
         
-    def do_search(self, engine_slug, queryset, search_text):
+    def do_search(self, engine_slug, queryset, search_text, search_config=None):
         """Performs the full text search."""
         return queryset.extra(
             where = ("search_tsv @@ to_tsquery('{search_config}', %s)".format(
-                search_config = self.search_config
+                search_config = search_config if search_config else self.search_config,
             ),),
             params = (self.escape_postgres_query(search_text),),
         )
         
-    def do_search_ranking(self, engine_slug, queryset, search_text):
+    def do_search_ranking(self, engine_slug, queryset, search_text, search_config=None):
         """Performs full text ranking."""
         return queryset.extra(
             select = {
                 "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
-                    search_config = self.search_config
+                    search_config = search_config if search_config else self.search_config,
                 ),
             },
             select_params = (self.escape_postgres_query(search_text),),
             order_by = ("-watson_rank",),
         )
         
-    def do_filter(self, engine_slug, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text, search_config=None):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
@@ -270,7 +304,7 @@ class PostgresSearchBackend(SearchBackend):
             where = (
                 "watson_searchentry.engine_slug = %s",
                 "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
-                    search_config = self.search_config
+                    search_config = search_config if search_config else self.search_config,
                 ),
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name = ref_name,
@@ -282,12 +316,12 @@ class PostgresSearchBackend(SearchBackend):
             params = (engine_slug, self.escape_postgres_query(search_text), content_type.id),
         )
         
-    def do_filter_ranking(self, engine_slug, queryset, search_text):
+    def do_filter_ranking(self, engine_slug, queryset, search_text, search_config=None):
         """Performs the full text ranking."""
         return queryset.extra(
             select = {
                 "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
-                    search_config = self.search_config
+                    search_config = search_config if search_config else self.search_config,
                 ),
             },
             select_params = (self.escape_postgres_query(search_text),),

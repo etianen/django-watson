@@ -143,6 +143,12 @@ class SearchAdapter(object):
         """
         return None
 
+    def get_search_config(self, obj):
+        """
+        Returns the search_config of this search result.
+        """
+        return getattr(obj, self.search_config, 'english')
+
 
 class SearchEngineError(Exception):
 
@@ -416,6 +422,7 @@ class SearchEngine(object):
             "content": adapter.get_content(obj),
             "url": adapter.get_url(obj),
             "meta_encoded": json.dumps(adapter.get_meta(obj)),
+            "search_config": adapter.get_search_config(obj),
         }
         # Try to get the existing search entry.
         object_id_int, search_entries = self._get_entries_for_obj(obj)
@@ -501,7 +508,7 @@ class SearchEngine(object):
                 else:
                     yield queryset.all()
     
-    def search(self, search_text, models=(), exclude=(), ranking=True):
+    def search(self, search_text, models=(), exclude=(), ranking=True, search_config=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         # Check for blank search text.
         search_text = search_text.strip()
@@ -519,14 +526,14 @@ class SearchEngine(object):
         )
         # Perform the backend-specific full text match.
         backend = get_backend()
-        queryset = backend.do_search(self._engine_slug, queryset, search_text)
+        queryset = backend.do_search(self._engine_slug, queryset, search_text, search_config)
         # Perform the backend-specific full-text ranking.
         if ranking:
-            queryset = backend.do_search_ranking(self._engine_slug, queryset, search_text)
+            queryset = backend.do_search_ranking(self._engine_slug, queryset, search_text, search_config)
         # Return the complete queryset.
         return queryset
         
-    def filter(self, queryset, search_text, ranking=True):
+    def filter(self, queryset, search_text, ranking=True, search_config=None):
         """
         Filters the given model or queryset using the given text, returning the
         modified queryset.
@@ -540,10 +547,10 @@ class SearchEngine(object):
             return queryset
         # Perform the backend-specific full text match.
         backend = get_backend()
-        queryset = backend.do_filter(self._engine_slug, queryset, search_text)
+        queryset = backend.do_filter(self._engine_slug, queryset, search_text, search_config)
         # Perform the backend-specific full-text ranking.
         if ranking:
-            queryset = backend.do_filter_ranking(self._engine_slug, queryset, search_text)
+            queryset = backend.do_filter_ranking(self._engine_slug, queryset, search_text, search_config)
         # Return the complete queryset.
         return queryset
 

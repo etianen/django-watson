@@ -13,28 +13,30 @@ Features
 * Order results by by relevance.
 * No need to install additional third-party modules or services.
 * Fast and scaleable enough for most use cases.
+* UPDATED: Can consider search config on row-level if there is column with language information (for PostgreSQL only)
 
 
 Documentation
 -------------
 
-Please read the [Getting Started][] guide for more information.
-
-[Getting Started]: https://github.com/etianen/django-watson/wiki
-    "Getting started with django-watson"
-    
-Download instructions, bug reporting and links to full documentation can be
-found at the [main project website][].
+Please read the docs for main project first:
 
 [main project website]: http://github.com/etianen/django-watson
     "django-watson on GitHub"
 
-You can keep up to date with the latest announcements by joining the
-[django-watson discussion group][].
+After installation register model with 
 
-[django-watson discussion group]: http://groups.google.com/group/django-watson
-    "django-watson Google Group"
+watson.register(Model, search_config='search_language')
 
+where search_config point to model's field with language name ('english', 'russian', etc., like in pg_catalog.*)
+Now you should be able to do search your model with or without search_config specified in your view, just like:
+
+            if request.LANGUAGE_CODE == 'ru':
+                results = watson.search(query, models=(my_model,), search_config='russian')
+            else:
+                results = watson.search(query, models=(my_model,))
+
+filter() is search_config aware too.
     
 More information
 ----------------
@@ -44,10 +46,3 @@ from the [django-watson project site][].
 
 [django-watson project site]: http://github.com/etianen/django-watson
     "django-watson on GitHub"
-    
-Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
-find him on the Internet in a number of different places:
-
-*   [Website](http://www.etianen.com/ "Dave Hall's homepage")
-*   [Twitter](http://twitter.com/etianen "Dave Hall on Twitter")
-*   [Google Profile](http://www.google.com/profiles/david.etianen "Dave Hall's Google profile")

@@ -67,6 +67,11 @@ class SearchEntry(models.Model):
     
     meta_encoded = models.TextField()
     
+    search_config = models.CharField(
+        max_length = 24,
+        default = 'english'
+    )
+
     @property
     def meta(self):
         """Returns the meta information stored with the search entry."""
