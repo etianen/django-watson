@@ -9,7 +9,10 @@ these tests have been amended to 'fooo' and 'baar'. Ho hum.
 from __future__ import unicode_literals
 
 import os, json
-from unittest import skipUnless
+try:
+    from unittest import skipUnless
+except:
+    from django.utils.unittest import skipUnless
 
 from django.db import models
 from django.test import TestCase
