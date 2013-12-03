@@ -64,10 +64,6 @@ DATABASES = {
         'PASSWORD': os.environ.get("DB_PASSWORD", ""),
     }
 }
-if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
-    DATABASES["default"]["OPTIONS"] = {
-        "init_command": "SET storage_engine=INNODB,character_set_connection=utf8,collation_connection=utf8_general_ci",
-    }
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.6/topics/i18n/

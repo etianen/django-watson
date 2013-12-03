@@ -351,8 +351,6 @@ class MySQLSearchBackend(SearchBackend):
             ))
         # Change the storage engine to MyISAM.
         cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
-        # Change the collaction to a case-insensitive one.
-        cursor.execute("ALTER TABLE watson_searchentry CONVERT TO CHARACTER SET utf8 COLLATE utf8_general_ci")
         # Add the full text indexes.
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title ON watson_searchentry (title)")
