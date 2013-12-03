@@ -3,6 +3,7 @@ python:
   - 2.6
   - 2.7
 env:
+  - DJANGO=django==1.4.10
   - DJANGO=django==1.5.5
   - DJANGO=django==1.6
   - DJANGO=django==1.6 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
