@@ -5,12 +5,18 @@ python:
 env:
   - DJANGO=django==1.5.4
   - DJANGO=django==1.6
+  - DB_ENGINE="django.db.backends.sqlite3"
+  - DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_USER="postgres"
+  - DB_ENGINE="django.db.backends.mysql" DB_USER="travis"
 services:
   - postgresql
   - mysql
 install:
   - pip install $DJANGO
   - python setup.py -q install
+before_script:
+  - mysql -e 'create database test_project;'
+  - psql -c 'create database test_project;' -U postgres
 script: python src/test_project/manage.py test watson
 notifications:
   email: false
