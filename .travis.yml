@@ -5,6 +5,9 @@ python:
 env:
   - DJANGO=django==1.5.4
   - DJANGO=django==1.6
+services:
+  - postgresql
+  - mysql
 install:
   - pip install $DJANGO
   - python setup.py -q install
