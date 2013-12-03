@@ -11,7 +11,7 @@ services:
   - postgresql
   - mysql
 install:
-  - pip install $DJANGO
+  - pip install $DJANGO psycopg2 MySQLdb
   - python setup.py -q install
 before_script:
   - mysql -e 'create database test_project;'
