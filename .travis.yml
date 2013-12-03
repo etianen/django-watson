@@ -25,12 +25,12 @@ services:
   - mysql
 install:
   - pip install $DJANGO
-  - test "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" && pip install psycopg2
-  - test "$DB_ENGINE" == "django.db.backends.mysql" && pip install MySQL-python
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then pip install psycopg2; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then pip install MySQL-python; fi
   - python setup.py -q install
 before_script:
-  - test "$DB_ENGINE" == "django.db.backends.mysql" && mysql -e 'create database test_project'
-  - test "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" && psql -c 'create database test_project;' -U postgres
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
 script: python src/test_project/manage.py test watson
 notifications:
   email: false
