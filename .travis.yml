@@ -3,11 +3,13 @@ python:
   - 2.6
   - 2.7
 env:
-  - DJANGO=django==1.5.4
-  - DJANGO=django==1.6
-  - DB_ENGINE="django.db.backends.sqlite3"
-  - DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_USER="postgres"
-  - DB_ENGINE="django.db.backends.mysql" DB_USER="travis"
+  django:
+    - DJANGO=django==1.5.4
+    - DJANGO=django==1.6
+  db:
+    - DB_ENGINE="django.db.backends.sqlite3"
+    - DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_USER="postgres"
+    - DB_ENGINE="django.db.backends.mysql" DB_USER="travis"
 services:
   - postgresql
   - mysql
