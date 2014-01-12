@@ -61,7 +61,7 @@ class Command(BaseCommand):
         try:
             search_engine = [x[1] for x in SearchEngine.get_created_engines() if x[0] == engine_slug][0]
         except IndexError:
-            raise CommandError, "Search Engine \"%s\" is not registered!" % engine_slug
+            raise CommandError("Search Engine \"%s\" is not registered!" % engine_slug)
 
         # is this a partial rebuild for a single model?
         try:
@@ -74,13 +74,13 @@ class Command(BaseCommand):
                 registered_models = search_engine.get_registered_models()
                 models = [x for x in registered_models if x.__name__ == model_name]
                 if len(models) > 1:
-                    raise CommandError, "Model name \"%s\" is not unique, cannot continue!" % model_name
+                    raise CommandError("Model name \"%s\" is not unique, cannot continue!" % model_name)
                 if models:
                     model = models[0]
                 else:
                     model = None
             if model is None or not search_engine.is_registered(model):
-                raise CommandError, "Model \"%s\" is not registered with django-watson search engine \"%s\"!" % (model_name, engine_slug)
+                raise CommandError("Model \"%s\" is not registered with django-watson search engine \"%s\"!" % (model_name, engine_slug))
 
         except IndexError:  # no arguments passed to us
             full_rebuild = True
