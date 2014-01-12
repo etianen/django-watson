@@ -183,17 +183,33 @@ class InternalsTest(SearchTestBase):
 
     def testSearchEntriesCreated(self):
         self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 4)
-        
+
+    def testBuildWatsonForModelCommand(self):
+        # Hack a change into the model using a bulk update, which doesn't send signals.
+        WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo1_selective")
+        WatsonTestModel2.objects.filter(id=self.test21.id).update(title="fooo2_selective")
+        # Test that no update has happened.
+        self.assertEqual(watson.search("fooo1_selective").count(), 0)
+        self.assertEqual(watson.search("fooo2_selective").count(), 0)
+        # Run the rebuild command.
+        call_command("buildwatson", "WatsonTestModel1", verbosity=0)
+        # Test that the update is now applies.
+        self.assertEqual(watson.search("fooo1_selective").count(), 1)
+        self.assertEqual(watson.search("fooo2_selective").count(), 0)
+
     def testBuildWatsonCommand(self):
         # Hack a change into the model using a bulk update, which doesn't send signals.
-        WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo")
+        WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo1")
+        WatsonTestModel2.objects.filter(id=self.test21.id).update(title="fooo2")
         # Test that no update has happened.
-        self.assertEqual(watson.search("fooo").count(), 0)
+        self.assertEqual(watson.search("fooo1").count(), 0)
+        self.assertEqual(watson.search("fooo2").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
         # Test that the update is now applies.
-        self.assertEqual(watson.search("fooo").count(), 1)
-        
+        self.assertEqual(watson.search("fooo1").count(), 1)
+        self.assertEqual(watson.search("fooo2").count(), 1)
+
     def testUpdateSearchIndex(self):
         # Update a model and make sure that the search results match.
         self.test11.title = "fooo"
