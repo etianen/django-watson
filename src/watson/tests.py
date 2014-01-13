@@ -193,9 +193,13 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", "WatsonTestModel1", verbosity=0)
-        # Test that the update is now applies.
+        # Test that the update is now applied to selected model.
         self.assertEqual(watson.search("fooo1_selective").count(), 1)
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
+        call_command("buildwatson", "WatsonTestModel1", "WatsonTestModel2", verbosity=0)
+        # Test that the update is now applied to multiple selected models.
+        self.assertEqual(watson.search("fooo1_selective").count(), 1)
+        self.assertEqual(watson.search("fooo2_selective").count(), 1)
 
     def testBuildWatsonCommand(self):
         # Hack a change into the model using a bulk update, which doesn't send signals.
@@ -206,7 +210,7 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("fooo2").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
-        # Test that the update is now applies.
+        # Test that the update is now applied.
         self.assertEqual(watson.search("fooo1").count(), 1)
         self.assertEqual(watson.search("fooo2").count(), 1)
 
