@@ -23,6 +23,7 @@ def regex_from_word(word):
 def make_escaper(badchars):
     """Creates an efficient escape function that strips the given characters from the string."""
     translation_table = dict((ord(c), None) for c in badchars)
+    translation_table[ord("'")] = "''"
     def escaper(text):
         return force_text(text, errors="ignore").translate(translation_table)
     return escaper
@@ -153,7 +154,7 @@ class RegexSearchBackend(RegexSearchMixin, SearchBackend):
     """A search backend that works with SQLite3."""
 
 
-escape_postgres_query_chars = make_escaper("():|!&*'")
+escape_postgres_query_chars = make_escaper("():|!&*")
 
 
 class PostgresSearchBackend(SearchBackend):

@@ -286,6 +286,14 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("FOOO").count(), 0)
         self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
         self.assertEqual(watson.search("MODEL2 INSTANCE11").count(), 0)
+
+    def testSearchWithApostrophe(self):
+        WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description model1 instance13",
+        )
+        self.assertEqual(watson.search("d'Argent").count(), 1)
         
     @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
     def testMultiTablePrefixSearch(self):
