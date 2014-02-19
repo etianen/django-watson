@@ -1,6 +1,14 @@
 django-watson changelog
 ==========================
 
+
+1.1.3 - 19/02/2014
+------------------
+
+* Ability to search for terms with apostrophes.
+* Ability to rebuild watson indices for specific models.
+
+
 1.1.2 - 05/10/2013
 ------------------
 
