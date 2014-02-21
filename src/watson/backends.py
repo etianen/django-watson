@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-import re, abc, string
+import re, abc
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection
@@ -321,7 +321,7 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
     """
         
 
-escape_mysql_boolean_query_chars = make_escaper("+-<>()*\"" + string.punctuation)
+escape_mysql_boolean_query_chars = make_escaper("+-<>()*\".!:,;")
 
 def escape_mysql_boolean_query(search_text):
     return " ".join(
