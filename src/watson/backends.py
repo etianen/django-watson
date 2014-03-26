@@ -11,6 +11,8 @@ from django.utils.encoding import force_text
 from django.utils import six
 
 from watson.models import SearchEntry, has_int_pk
+import shlex
+import traceback
 
 
 def regex_from_word(word):
@@ -72,7 +74,7 @@ class SearchBackend(six.with_metaclass(abc.ABCMeta)):
         )
     
     @abc.abstractmethod
-    def do_filter(self, engine_slug, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text, advanced_search = False):
         """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
 
@@ -93,7 +95,7 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
             word_query
         )
         
-    def do_filter(self, engine_slug, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text, advanced_search = False):
         """Filters the given queryset according the the search logic for this backend."""
         model = queryset.model
         db_table = connection.ops.quote_name(SearchEntry._meta.db_table)
@@ -256,7 +258,7 @@ class PostgresSearchBackend(SearchBackend):
             order_by = ("-watson_rank",),
         )
         
-    def do_filter(self, engine_slug, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text, advanced_search = False):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
@@ -321,9 +323,33 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
     """
         
 
-escape_mysql_boolean_query_chars = make_escaper("+-<>()*\".!:,;")
+escape_mysql_boolean_query_chars = make_escaper("+-<>()*\"\'.!:,;")
 
-def escape_mysql_boolean_query(search_text):
+def escape_mysql_boolean_query(search_text, advanced_search=False):
+    """It parses special characteres out of the text. In case the advanced_search==True, 
+    quotted text and the minus mark are taken into account"""
+    if advanced_search:
+        unquoted_escape_mysql_boolean_query_chars = make_escaper("+<>()*.!:,;")                 # Keeps the quotes and minus mark(s)
+        try:
+            formatted_terms = ''
+
+            for each_term in shlex.split(unquoted_escape_mysql_boolean_query_chars(search_text)): # Split words mantaining quotted text together
+                if len(each_term.split()) > 1:
+                    if each_term[0] == '-':     # Quotted text to exclude
+                        formatted_terms = formatted_terms + '-"{word}" '.format(word = each_term[1:],)    
+                    else:                       # Quotted text to include
+                        formatted_terms = formatted_terms + '+"{word}" '.format(word = each_term,)
+
+                elif each_term[0] == '-':       # Words to exclude
+                    formatted_terms = formatted_terms + '{word}* '.format(word = each_term,)
+                else:                           # Regular words to include
+                    formatted_terms = formatted_terms + '+{word}* '.format(word = each_term,)
+
+            return formatted_terms
+
+        except ValueError, e:
+            traceback.print_exc()
+
     return " ".join(
         '+{word}*'.format(
             word = word,
@@ -394,7 +420,7 @@ class MySQLSearchBackend(SearchBackend):
             order_by = ("-watson_rank",),
         )
         
-    def do_filter(self, engine_slug, queryset, search_text):
+    def do_filter(self, engine_slug, queryset, search_text, advanced_search = False):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
@@ -415,7 +441,7 @@ class MySQLSearchBackend(SearchBackend):
                 ),
                 "watson_searchentry.content_type_id = %s",
             ),
-            params = (engine_slug, escape_mysql_boolean_query(search_text), content_type.id),
+            params = (engine_slug, escape_mysql_boolean_query(search_text, advanced_search), content_type.id),
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
