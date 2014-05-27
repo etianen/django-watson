@@ -1,3 +1,4 @@
+import os
 from distutils.core import setup
 
 
@@ -5,7 +6,7 @@ setup(
     name = "django-watson",
     version = "1.1.3",
     description = "Full-text multi-table search application for Django. Easy to install and use, with good performance.",
-    long_description = open("README.markdown").read(),
+    long_description = open(os.path.join(os.path.dirname(__file__), "README.markdown")).read(),
     author = "Dave Hall",
     author_email = "dave@etianen.com",
     url = "http://github.com/etianen/django-watson",
