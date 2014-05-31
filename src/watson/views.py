@@ -72,14 +72,14 @@ class SearchMixin(object):
             context[key] = value
         return context
     
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         """Performs a GET request."""
         self.query = self.get_query(request)
         if not self.query:
             empty_query_redirect = self.get_empty_query_redirect()
             if empty_query_redirect:
                 return redirect(empty_query_redirect)
-        return super(SearchMixin, self).get(request)
+        return super(SearchMixin, self).get(request, *args, **kwargs)
 
 
 class SearchView(SearchMixin, generic.ListView):
