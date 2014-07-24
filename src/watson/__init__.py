@@ -27,3 +27,4 @@ get_adapter = default_search_engine.get_adapter
 
 # Easy context management.
 update_index = search_context_manager.update_index
+skip_index_update = search_context_manager.skip_index_update
