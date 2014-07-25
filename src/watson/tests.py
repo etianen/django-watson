@@ -251,6 +251,28 @@ class InternalsTest(SearchTestBase):
         # Test a search that should get not model.
         self.assertEqual(watson.search("fooo").count(), 0)
         
+    def testNestedSkipInUpdateContext(self):
+        with watson.update_index():
+            self.test21.title = "baar"
+            self.test21.save()
+            with watson.skip_index_update():
+                self.test11.title = "fooo"
+                self.test11.save()
+        # We should get "baar", but not "fooo"
+        self.assertEqual(watson.search("fooo").count(), 0)
+        self.assertEqual(watson.search("baar").count(), 1)
+
+    def testNestedUpdateInSkipContext(self):
+        with watson.skip_index_update():
+            self.test21.title = "baar"
+            self.test21.save()
+            with watson.update_index():
+                self.test11.title = "fooo"
+                self.test11.save()
+        # We should get "fooo", but not "baar"
+        self.assertEqual(watson.search("fooo").count(), 1)
+        self.assertEqual(watson.search("baar").count(), 0)
+
     def testFixesDuplicateSearchEntries(self):
         search_entries = SearchEntry.objects.filter(engine_slug="default")
         # Duplicate a couple of search entries.
