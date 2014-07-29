@@ -232,7 +232,15 @@ class SearchContextManager(local):
         The returned context manager can also be used as a decorator.
         """
         return SearchContext(self)
-    
+
+    def skip_index_update(self):
+        """
+        Marks up a block of code as not requiring a search index update.
+
+        Like update_index, the returned context manager can also be used as a decorator.
+        """
+        return SkipSearchContext(self)
+
     # Signalling hooks.
         
     def _request_finished_receiver(self, **kwargs):
@@ -281,8 +289,21 @@ class SearchContext(object):
                 if not exception:
                     self.__exit__(None, None, None)
         return do_search_context
-        
-            
+
+
+class SkipSearchContext(SearchContext):
+
+    """A context that skips over index updating"""
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Mark it as invalid and exit"""
+        try:
+            self._context_manager.invalidate()
+        finally:
+            self._context_manager.end()
+
+
+
 # The shared, thread-safe search context manager.
 search_context_manager = SearchContextManager()
 
