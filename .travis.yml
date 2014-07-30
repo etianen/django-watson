@@ -28,6 +28,12 @@ matrix:
       env: DJANGO=django==1.6.5 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
     - python: 3.4
       env: DJANGO=django==1.6.5 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 2.6
+      env: DJANGO="django==https://www.djangoproject.com/download/1.7c2/tarball/"
+    - python: 2.6
+      env: DJANGO="django==https://www.djangoproject.com/download/1.7c2/tarball/" DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - python: 2.6
+      env: DJANGO="django==https://www.djangoproject.com/download/1.7c2/tarball/" DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
     - python: 3.2
       env: DJANGO="django==https://www.djangoproject.com/download/1.7c2/tarball/" DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
     - python: 3.3
