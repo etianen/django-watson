@@ -50,9 +50,9 @@ services:
   - postgresql
   - mysql
 install:
-  - pip install $DJANGO
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then pip install MySQL-python; fi
+  - travis_retry pip install $DJANGO
+  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install MySQL-python; fi
   - python setup.py -q install
 before_script:
   - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
