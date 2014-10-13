@@ -52,12 +52,14 @@ class SearchAdapter(object):
         # Get the attribute.
         if hasattr(obj, prefix):
             value = getattr(obj, prefix)
-            if callable(value):
-                value = value()
+            if not isinstance(value, (QuerySet, models.Manager)):
+                if callable(value):
+                    value = value()
         elif hasattr(self, prefix):
             value = getattr(self, prefix)
-            if callable(value):
-                value = value(obj)
+            if not isinstance(value, (QuerySet, models.Manager)):
+                if callable(value):
+                    value = value(obj)
         else:
             raise SearchAdapterError("Could not find a property called {name!r} on either {obj!r} or {search_adapter!r}".format(
                 name = prefix,
