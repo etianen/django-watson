@@ -2,6 +2,14 @@ django-watson changelog
 ==========================
 
 
+1.1.4 - 14/10/2014
+------------------
+
+* skip_index_update() context manager (@moggers87)
+* Improved Travis CI integration (@thedrow)
+* Minor bug fixes (@bdauvergne, @moggers87, @Gzing)
+
+
 1.1.3 - 19/02/2014
 ------------------
 
