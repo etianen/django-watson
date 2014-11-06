@@ -11,3 +11,4 @@ Thumbs.db
 /MANIFEST
 /dist
 *.sqlite3
+*.egg-info

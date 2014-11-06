@@ -50,7 +50,9 @@ class SearchAdapter(object):
         name_parts = name.split("__", 1)
         prefix = name_parts[0]
         # Get the attribute.
-        if hasattr(obj, prefix):
+        if obj is None:
+            return ""
+        elif hasattr(obj, prefix):
             value = getattr(obj, prefix)
             if not isinstance(value, (QuerySet, models.Manager)):
                 if callable(value):
