@@ -2,6 +2,12 @@ django-watson changelog
 ==========================
 
 
+1.1.5 - 08/11/2014
+------------------
+
+* Fixing issue with indexing nullable ForeignKey fields.
+
+
 1.1.4 - 14/10/2014
 ------------------
 
