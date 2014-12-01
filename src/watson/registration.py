@@ -526,7 +526,7 @@ class SearchEngine(object):
                 else:
                     yield queryset.all()
     
-    def search(self, search_text, models=(), exclude=(), ranking=True):
+    def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         # Check for blank search text.
         search_text = search_text.strip()
@@ -543,7 +543,7 @@ class SearchEngine(object):
             self._create_model_filter(exclude)
         )
         # Perform the backend-specific full text match.
-        backend = get_backend()
+        backend = get_backend(backend_name=backend_name)
         queryset = backend.do_search(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
@@ -581,14 +581,15 @@ default_search_engine = SearchEngine("default")
 _backend_cache = None
 
 
-def get_backend():
+def get_backend(backend_name=None):
     """Initializes and returns the search backend."""
     global _backend_cache
     # Try to use the cached backend.
     if _backend_cache is not None:
         return _backend_cache
     # Load the backend class.
-    backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
+    if not backend_name:
+        backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
     backend_module_name, backend_cls_name = backend_name.rsplit(".", 1)
     backend_module = import_module(backend_module_name)
     try:
