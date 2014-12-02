@@ -551,7 +551,7 @@ class SearchEngine(object):
         # Return the complete queryset.
         return queryset
         
-    def filter(self, queryset, search_text, ranking=True):
+    def filter(self, queryset, search_text, ranking=True, backend_name=None):
         """
         Filters the given model or queryset using the given text, returning the
         modified queryset.
@@ -564,7 +564,7 @@ class SearchEngine(object):
         if not search_text:
             return queryset
         # Perform the backend-specific full text match.
-        backend = get_backend()
+        backend = get_backend(backend_name=backend_name)
         queryset = backend.do_filter(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
