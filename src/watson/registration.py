@@ -584,8 +584,8 @@ _backend_cache = None
 def get_backend(backend_name=None):
     """Initializes and returns the search backend."""
     global _backend_cache
-    # Try to use the cached backend.
-    if _backend_cache is not None:
+    # Try to use the cached backend if no backend is specified.
+    if _backend_cache is not None and not backend_name:
         return _backend_cache
     # Load the backend class.
     if not backend_name:
