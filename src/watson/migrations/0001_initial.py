@@ -40,6 +40,7 @@ class Migration(migrations.Migration):
             bases=(models.Model,),
         ),
         migrations.RunPython(
-
+            install_watson,
+            uninstall_watson,
         ),
     ]
