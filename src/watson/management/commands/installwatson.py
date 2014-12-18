@@ -3,7 +3,6 @@
 from __future__ import unicode_literals
 
 from django.core.management.base import NoArgsCommand
-from django.db import transaction
 
 from watson.registration import get_backend
 
@@ -12,7 +11,6 @@ class Command(NoArgsCommand):
 
     help = "Creates the database indices needed by django-watson."
     
-    @transaction.atomic()
     def handle_noargs(self, **options):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))

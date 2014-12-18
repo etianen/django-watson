@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 import re, abc
 
 from django.contrib.contenttypes.models import ContentType
-from django.db import connection
+from django.db import connection, transaction
 from django.db.models import Q
 from django.utils.encoding import force_text
 from django.utils import six
@@ -181,6 +181,7 @@ class PostgresSearchBackend(SearchBackend):
         """)
         return bool(cursor.fetchall())
     
+    @transaction.atomic()
     def do_install(self):
         """Executes the PostgreSQL specific SQL code to install django-watson."""
         connection.cursor().execute("""
@@ -220,6 +221,7 @@ class PostgresSearchBackend(SearchBackend):
             search_config = self.search_config
         ))
 
+    @transaction.atomic()
     def do_uninstall(self):
         """Executes the PostgreSQL specific SQL code to uninstall django-watson."""
         connection.cursor().execute("""

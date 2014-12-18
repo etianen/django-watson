@@ -35,9 +35,9 @@ matrix:
     - python: 3.4
       env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   allow_failures:
-    - DJANGO=django==1.7.1
-    - DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-    - DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - env: DJANGO=django==1.7.1
+    - env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   fast_finish: true
 services:
   - postgresql
