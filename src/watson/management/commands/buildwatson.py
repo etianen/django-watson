@@ -59,7 +59,7 @@ class Command(BaseCommand):
             help="Search engine models are registered with"),
         )
 
-    @transaction.commit_on_success
+    @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))

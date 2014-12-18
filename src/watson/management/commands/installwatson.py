@@ -12,7 +12,7 @@ class Command(NoArgsCommand):
 
     help = "Creates the database indices needed by django-watson."
     
-    @transaction.commit_on_success
+    @transaction.atomic()
     def handle_noargs(self, **options):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))
