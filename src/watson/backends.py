@@ -333,7 +333,7 @@ def escape_mysql_boolean_query(search_text):
         )
         for word in escape_mysql_boolean_query_chars(search_text).split()
     )
-    
+
 
 class MySQLSearchBackend(SearchBackend):
 
@@ -374,17 +374,20 @@ class MySQLSearchBackend(SearchBackend):
     requires_installation = True
     
     supports_ranking = True
+
+    def _format_query(self, search_text):
+        return escape_mysql_boolean_query(search_text)
     
     def do_search(self, engine_slug, queryset, search_text):
         """Performs the full text search."""
         return queryset.extra(
             where = ("MATCH (title, description, content) AGAINST (%s IN BOOLEAN MODE)",),
-            params = (escape_mysql_boolean_query(search_text),),
+            params = (self._format_query(search_text),),
         )
         
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
-        search_text = escape_mysql_boolean_query(search_text)
+        search_text = self._format_query(search_text)
         return queryset.extra(
             select = {
                 "watson_rank": """
@@ -418,12 +421,12 @@ class MySQLSearchBackend(SearchBackend):
                 ),
                 "watson_searchentry.content_type_id = %s",
             ),
-            params = (engine_slug, escape_mysql_boolean_query(search_text), content_type.id),
+            params = (engine_slug, self._format_query(search_text), content_type.id),
         )
         
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
-        search_text = escape_mysql_boolean_query(search_text)
+        search_text = self._format_query(search_text)
         return queryset.extra(
             select = {
                 "watson_rank": """
