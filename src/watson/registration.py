@@ -264,7 +264,7 @@ class SearchContext(object):
     def __init__(self, context_manager):
         """Initializes the search index context."""
         self._context_manager = context_manager
-    
+
     def __enter__(self):
         """Enters a block of search index management."""
         self._context_manager.start()
@@ -578,15 +578,15 @@ default_search_engine = SearchEngine("default")
 
 
 # The cache for the initialized backend.
-_backend_cache = None
+_backends_cache = {}
 
 
 def get_backend(backend_name=None):
     """Initializes and returns the search backend."""
-    global _backend_cache
+    global _backends_cache
     # Try to use the cached backend.
-    if _backend_cache is not None:
-        return _backend_cache
+    if backend_name in _backends_cache:
+        return _backends_cache[backend_name]
     # Load the backend class.
     if not backend_name:
         backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
@@ -601,5 +601,5 @@ def get_backend(backend_name=None):
         ))
     # Initialize the backend.
     backend = backend_cls()
-    _backend_cache = backend
+    _backends_cache[backend_name] = backend
     return backend
