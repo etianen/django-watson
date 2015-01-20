@@ -9,6 +9,7 @@ from django.db.models import get_model
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
+from django.utils.encoding import force_text
 
 from watson.registration import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
@@ -38,7 +39,7 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_):
             if verbosity_ >= 3:
                 print("Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
                     model = model_._meta.verbose_name,
-                    obj = obj,
+                    obj = force_text(obj),
                     engine_slug = engine_slug_,
                 ))
         if verbosity_ == 2:
