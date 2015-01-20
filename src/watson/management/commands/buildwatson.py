@@ -91,7 +91,7 @@ class Command(BaseCommand):
             if model is None or not search_engine.is_registered(model):
                 raise CommandError("Model \"%s\" is not registered with django-watson search engine \"%s\"!" % (model_name, engine_slug))
             models.append(model)
-        
+
         refreshed_model_count = 0
 
         if models:  # request for (re-)building index for a subset of registered models
@@ -116,21 +116,21 @@ class Command(BaseCommand):
                 for model in registered_models:
                     refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity)
 
-            # Clean out any search entries that exist for stale content types. Only do it during full rebuild
-            valid_content_types = [ContentType.objects.get_for_model(model) for model in registered_models]
-            stale_entries = SearchEntry.objects.filter(
-                engine_slug = engine_slug,
-            ).exclude(
-                content_type__in = valid_content_types
-            )
-            stale_entry_count = stale_entries.count()
-            if stale_entry_count > 0:
-                stale_entries.delete()
-            if verbosity >= 1:
-                print("Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
-                    stale_entry_count = stale_entry_count,
+                # Clean out any search entries that exist for stale content types. Only do it during full rebuild
+                valid_content_types = [ContentType.objects.get_for_model(model) for model in registered_models]
+                stale_entries = SearchEntry.objects.filter(
                     engine_slug = engine_slug,
-                ))
+                ).exclude(
+                    content_type__in = valid_content_types
+                )
+                stale_entry_count = stale_entries.count()
+                if stale_entry_count > 0:
+                    stale_entries.delete()
+                if verbosity >= 1:
+                    print("Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
+                        stale_entry_count = stale_entry_count,
+                        engine_slug = engine_slug,
+                    ))
 
         if verbosity == 1:
             print("Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
