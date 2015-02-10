@@ -3,6 +3,7 @@
 from __future__ import unicode_literals
 
 from django import template
+from django.contrib.contenttypes.models import ContentType
 
 
 register = template.Library()
@@ -29,9 +30,11 @@ def search_results(context, search_results):
 @register.simple_tag(takes_context=True)
 def search_result_item(context, search_result):
     obj = search_result.object
+    content_type = ContentType.objects.get_for_id(search_result.content_type_id)
+
     params = {
-        "app_label": search_result.content_type.app_label,
-        "model_name": search_result.content_type.model,
+        "app_label": content_type.app_label,
+        "model_name": content_type.model,
     }
     # Render the template.
     context.push()
