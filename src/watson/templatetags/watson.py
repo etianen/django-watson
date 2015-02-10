@@ -24,14 +24,14 @@ def search_results(context, search_results):
         return template.loader.render_to_string("watson/includes/search_results.html", context)
     finally:
         context.pop()
-    
-    
+
+
 @register.simple_tag(takes_context=True)
 def search_result_item(context, search_result):
     obj = search_result.object
     params = {
-        "app_label": obj._meta.app_label,
-        "model_name": obj.__class__.__name__.lower(),
+        "app_label": search_result.content_type.app_label,
+        "model_name": search_result.content_type.model,
     }
     # Render the template.
     context.push()
