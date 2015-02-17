@@ -18,7 +18,10 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
-from django.utils.importlib import import_module
+try:
+    from importlib import import_module
+except ImportError:
+    from django.utils.importlib import import_module
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -31,20 +34,20 @@ class SearchAdapterError(Exception):
 class SearchAdapter(object):
 
     """An adapter for performing a full-text search on a model."""
-    
+
     # Use to specify the fields that should be included in the search.
     fields = ()
-    
+
     # Use to exclude fields from the search.
     exclude = ()
-    
+
     # Use to specify object properties to be stored in the search index.
     store = ()
-    
+
     def __init__(self, model):
         """Initializes the search adapter."""
         self.model = model
-    
+
     def _resolve_field(self, obj, name):
         """Resolves the content of the given model field."""
         name_parts = name.split("__", 1)
@@ -78,42 +81,42 @@ class SearchAdapter(object):
             value = " ".join(force_text(related) for related in value.all())
         # Resolution complete!
         return value
-    
+
     def prepare_content(self, content):
         """Sanitizes the given content string for better parsing by the search engine."""
         # Strip out HTML tags.
         content = strip_tags(content)
         return content
-    
+
     def get_title(self, obj):
         """
         Returns the title of this search result. This is given high priority in search result ranking.
-        
+
         You can access the title of the search entry as `entry.title` in your search results.
-        
+
         The default implementation returns `force_text(obj)`.
         """
         return force_text(obj)
-        
+
     def get_description(self, obj):
         """
         Returns the description of this search result. This is given medium priority in search result ranking.
-        
+
         You can access the description of the search entry as `entry.description` in your search results. Since
         this should contains a short description of the search entry, it's excellent for providing a summary
         in your search results.
-        
+
         The default implementation returns `""`.
         """
         return ""
-        
+
     def get_content(self, obj):
         """
         Returns the content of this search result. This is given low priority in search result ranking.
-        
+
         You can access the content of the search entry as `entry.content` in your search results, although
         this field generally contains a big mess of search data so is less suitable for frontend display.
-        
+
         The default implementation returns all the registered fields in your model joined together.
         """
         # Get the field names to look up.
@@ -125,24 +128,24 @@ class SearchAdapter(object):
             force_text(self._resolve_field(obj, field_name))
             for field_name in field_names
         ))
-    
+
     def get_url(self, obj):
         """Return the URL of the given obj."""
         if hasattr(obj, "get_absolute_url"):
             return obj.get_absolute_url()
         return ""
-    
+
     def get_meta(self, obj):
         """Returns a dictionary of meta information about the given obj."""
         return dict(
             (field_name, self._resolve_field(obj, field_name))
             for field_name in self.store
         )
-        
+
     def get_live_queryset(self):
         """
         Returns the queryset of objects that should be considered live.
-        
+
         If this returns None, then all objects should be considered live, which is more efficient.
         """
         return None
@@ -156,10 +159,10 @@ class SearchEngineError(Exception):
 class RegistrationError(SearchEngineError):
 
     """Something went wrong when registering a model with a search engine."""
-    
-    
+
+
 class SearchContextError(Exception):
-    
+
     """Something went wrong with the search context management."""
 
 
@@ -181,44 +184,44 @@ def _bulk_save_search_entries(search_entries, batch_size=100):
 class SearchContextManager(local):
 
     """A thread-local context manager used to manage saving search data."""
-    
+
     def __init__(self):
         """Initializes the search context."""
         self._stack = []
         # Connect to the signalling framework.
         request_finished.connect(self._request_finished_receiver)
-    
+
     def is_active(self):
         """Checks that this search context is active."""
         return bool(self._stack)
-    
+
     def _assert_active(self):
         """Ensures that the search context is active."""
         if not self.is_active():
             raise SearchContextError("The search context is not active.")
-        
+
     def start(self):
         """Starts a level in the search context."""
         self._stack.append((set(), False))
-    
+
     def add_to_context(self, engine, obj):
         """Adds an object to the current context, if active."""
         self._assert_active()
         objects, _ = self._stack[-1]
         objects.add((engine, obj))
-    
+
     def invalidate(self):
         """Marks this search context as broken, so should not be commited."""
         self._assert_active()
         objects, _ = self._stack[-1]
         self._stack[-1] = (objects, True)
-        
+
     def is_invalid(self):
         """Checks whether this search context is invalid."""
         self._assert_active()
         _, is_invalid = self._stack[-1]
         return is_invalid
-    
+
     def end(self):
         """Ends a level in the search context."""
         self._assert_active()
@@ -226,13 +229,13 @@ class SearchContextManager(local):
         tasks, is_invalid = self._stack.pop()
         if not is_invalid:
             _bulk_save_search_entries(list(chain.from_iterable(engine._update_obj_index_iter(obj) for engine, obj in tasks)))
-    
+
     # Context management.
-            
+
     def update_index(self):
         """
         Marks up a block of code as requiring the search indexes to be updated.
-        
+
         The returned context manager can also be used as a decorator.
         """
         return SearchContext(self)
@@ -246,7 +249,7 @@ class SearchContextManager(local):
         return SkipSearchContext(self)
 
     # Signalling hooks.
-        
+
     def _request_finished_receiver(self, **kwargs):
         """
         Called at the end of a request, ensuring that any open contexts
@@ -255,8 +258,8 @@ class SearchContextManager(local):
         """
         while self.is_active():
             self.end()
-            
-            
+
+
 class SearchContext(object):
 
     """An individual context for a search index update."""
@@ -268,7 +271,7 @@ class SearchContext(object):
     def __enter__(self):
         """Enters a block of search index management."""
         self._context_manager.start()
-        
+
     def __exit__(self, exc_type, exc_value, traceback):
         """Leaves a block of search index management."""
         try:
@@ -276,7 +279,7 @@ class SearchContext(object):
                 self._context_manager.invalidate()
         finally:
             self._context_manager.end()
-        
+
     def __call__(self, func):
         """Allows this search index context to be used as a decorator."""
         @wraps(func)
@@ -315,14 +318,14 @@ search_context_manager = SearchContextManager()
 class SearchEngine(object):
 
     """A search engine capable of performing multi-table searches."""
-    
+
     _created_engines = WeakValueDictionary()
-    
+
     @classmethod
     def get_created_engines(cls):
         """Returns all created search engines."""
         return list(cls._created_engines.items())
-    
+
     def __init__(self, engine_slug, search_context_manager=search_context_manager):
         """Initializes the search engine."""
         # Check the slug is unique for this project.
@@ -345,7 +348,7 @@ class SearchEngine(object):
     def register(self, model, adapter_cls=SearchAdapter, **field_overrides):
         """
         Registers the given model with this search engine.
-        
+
         If the given model is already registered with this search engine, a
         RegistrationError will be raised.
         """
@@ -369,11 +372,11 @@ class SearchEngine(object):
         # Connect to the signalling framework.
         post_save.connect(self._post_save_receiver, model)
         pre_delete.connect(self._pre_delete_receiver, model)
-    
+
     def unregister(self, model):
         """
         Unregisters the given model with this search engine.
-        
+
         If the given model is not registered with this search engine, a RegistrationError
         will be raised.
         """
@@ -390,11 +393,11 @@ class SearchEngine(object):
         # Disconnect from the signalling framework.
         post_save.disconnect(self._post_save_receiver, model)
         pre_delete.disconnect(self._pre_delete_receiver, model)
-        
+
     def get_registered_models(self):
         """Returns a sequence of models that have been registered with this search engine."""
         return list(self._registered_models.keys())
-    
+
     def get_adapter(self, model):
         """Returns the adapter associated with the given model."""
         if self.is_registered(model):
@@ -402,7 +405,7 @@ class SearchEngine(object):
         raise RegistrationError("{model!r} is not registered with this search engine".format(
             model = model,
         ))
-    
+
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
         model = obj.__class__
@@ -426,7 +429,7 @@ class SearchEngine(object):
                 object_id = object_id,
             )
         return object_id_int, search_entries
-    
+
     def _update_obj_index_iter(self, obj):
         """Either updates the given object index, or yields an unsaved search entry."""
         model = obj.__class__
@@ -457,27 +460,27 @@ class SearchEngine(object):
         elif update_count > 1:
             # Oh no! Somehow we've got duplicated search entries!
             search_entries.exclude(id=search_entries[0].id).delete()
-    
+
     def update_obj_index(self, obj):
         """Updates the search index for the given obj."""
         _bulk_save_search_entries(list(self._update_obj_index_iter(obj)))
-        
+
     # Signalling hooks.
-            
+
     def _post_save_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been saved."""
         if self._search_context_manager.is_active():
             self._search_context_manager.add_to_context(self, instance)
         else:
             self.update_obj_index(instance)
-            
+
     def _pre_delete_receiver(self, instance, **kwargs):
         """Signal handler for when a registered model has been deleted."""
         _, search_entries = self._get_entries_for_obj(instance)
         search_entries.delete()
-        
+
     # Searching.
-    
+
     def _create_model_filter(self, models):
         """Creates a filter for the given model/queryset list."""
         filters = Q()
@@ -512,7 +515,7 @@ class SearchEngine(object):
             # Combine with the other filters.
             filters |= filter
         return filters
-    
+
     def _get_included_models(self, models):
         """Returns an iterable of models and querysets that should be included in the search query."""
         for model in models or self.get_registered_models():
@@ -525,7 +528,7 @@ class SearchEngine(object):
                     yield model
                 else:
                     yield queryset.all()
-    
+
     def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         # Check for blank search text.
@@ -550,7 +553,7 @@ class SearchEngine(object):
             queryset = backend.do_search_ranking(self._engine_slug, queryset, search_text)
         # Return the complete queryset.
         return queryset
-        
+
     def filter(self, queryset, search_text, ranking=True, backend_name=None):
         """
         Filters the given model or queryset using the given text, returning the
