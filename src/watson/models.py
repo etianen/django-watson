@@ -91,3 +91,4 @@ class SearchEntry(models.Model):
 
     class Meta:
         verbose_name_plural = "search entries"
+        app_label = 'watson'
