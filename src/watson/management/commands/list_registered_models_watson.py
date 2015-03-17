@@ -11,6 +11,6 @@ class Command(NoArgsCommand):
         """Runs the management command."""
         self.stdout.write("The following models are registed for the django-watson seach engine:\n")
         for mdl in watson.get_registered_models():
-          self.stdout.write("- %s\n" % mdl.__name__)
+            self.stdout.write("- %s\n" % mdl.__name__)
         
         
