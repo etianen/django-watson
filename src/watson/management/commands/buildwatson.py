@@ -10,6 +10,9 @@ from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.utils.encoding import force_text
+from django.utils.translation import activate
+from django.conf import settings
+
 
 from watson.registration import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
@@ -63,6 +66,7 @@ class Command(BaseCommand):
     @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
+        activate(settings.LANGUAGE_CODE)
         verbosity = int(options.get("verbosity", 1))
 
         # see if we're asked to use a specific search engine
