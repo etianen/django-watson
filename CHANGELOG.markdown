@@ -1,5 +1,16 @@
 django-watson changelog
-==========================
+=======================
+
+
+1.1.6 - 01/04/2015
+------------------
+
+* Added listwatson management command (@philippeowagner)
+* Added _format_query() hook to MySQL search backend (@alexey-grom)
+* Adding in Django 1.7 migrations.
+* Ability to specify a search backend name for the filter() and search() methods (@amin-pylot)
+* Bugfixes and tweaks (@thedrow, @dessibelle, @carltongibson, @philippeowagner)
+
 
 
 1.1.5 - 08/11/2014
