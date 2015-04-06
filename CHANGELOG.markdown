@@ -2,6 +2,12 @@ django-watson changelog
 =======================
 
 
+1.1.7 - 06/04/2015
+------------------
+
+* Included south_migrations in the source distribution.
+
+
 1.1.6 - 01/04/2015
 ------------------
 
