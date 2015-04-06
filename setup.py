@@ -16,6 +16,7 @@ setup(
         "watson.management",
         "watson.management.commands",
         "watson.migrations",
+        "watson.south_migrations",
         "watson.templatetags",
     ],
     package_dir = {
