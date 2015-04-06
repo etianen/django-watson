@@ -4,7 +4,7 @@ from distutils.core import setup
 
 setup(
     name = "django-watson",
-    version = "1.1.6",
+    version = "1.1.7",
     description = "Full-text multi-table search application for Django. Easy to install and use, with good performance.",
     long_description = open(os.path.join(os.path.dirname(__file__), "README.markdown")).read(),
     author = "Dave Hall",
