@@ -8,3 +8,17 @@
         {% endfor %}
     </ul>
 {% endif %}
+
+{% if search_results.paginator.num_pages > 1 %}
+        <div class="pagination">
+            {% if search_results.has_previous %}
+                <a href="?q={{request.GET.q}}&page={{ search_results.previous_page_number }}" class="prev">PREV</a>
+            {% endif %}
+            <span class="selected">
+                Page {{ search_results.number }} of {{ search_results.paginator.num_pages }}
+            </span>
+            {% if search_results.has_next %}
+                <a href="?q={{request.GET.q}}&page={{ search_results.next_page_number }}" class="next">NEXT</a>
+            {% endif %}
+        </div><!--pagination-->
+    {% endif %}

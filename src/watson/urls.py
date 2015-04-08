@@ -10,7 +10,7 @@ except ImportError:  # Django<1.4
 
 urlpatterns = patterns("watson.views",
 
-    url("^$", "search", name="search"),
+    url("^$", "search", name="search", kwargs={"paginate_by": 10}), # paginate_by is used to paginate the results.
     
     url("^json/$", "search_json", name="search_json"),
 
