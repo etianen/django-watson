@@ -52,7 +52,7 @@ class SearchAdapter(object):
         """Resolves the content of the given model field."""
         name_parts = name.split("__", 1)
         prefix = name_parts[0]
-        # Check if the attribute exists
+        # Check if the attribute exists in the database
         try:
             if not getattr(obj, prefix):
                 return ""
