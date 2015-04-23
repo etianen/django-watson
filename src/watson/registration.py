@@ -10,7 +10,7 @@ from weakref import WeakValueDictionary
 
 from django.conf import settings
 from django.core.signals import request_finished
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
@@ -52,6 +52,12 @@ class SearchAdapter(object):
         """Resolves the content of the given model field."""
         name_parts = name.split("__", 1)
         prefix = name_parts[0]
+        # Check if the attribute exists
+        try:
+            if not getattr(obj, prefix):
+                return ""
+        except ObjectDoesNotExist:
+            return ""
         # Get the attribute.
         if obj is None:
             return ""
