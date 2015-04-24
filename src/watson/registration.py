@@ -10,7 +10,7 @@ from weakref import WeakValueDictionary
 
 from django.conf import settings
 from django.core.signals import request_finished
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
@@ -52,25 +52,34 @@ class SearchAdapter(object):
         """Resolves the content of the given model field."""
         name_parts = name.split("__", 1)
         prefix = name_parts[0]
-        # Get the attribute.
+        # If we're at the end of the resolve chain, return.
         if obj is None:
             return ""
-        elif hasattr(obj, prefix):
+        # Try to get the attribute from the object.
+        try:
             value = getattr(obj, prefix)
+        except ObjectDoesNotExist:
+            return ""
+        except AttributeError:
+            # Try to get the attribute from the search adapter.
+            try:
+                value = getattr(self, prefix)
+            except AttributeError:
+                raise SearchAdapterError("Could not find a property called {name!r} on either {obj!r} or {search_adapter!r}".format(
+                    name = prefix,
+                    obj = obj,
+                    search_adapter = self,
+                ))
+            else:
+                # Run the attribute on the search adapter, if it's callable.
+                if not isinstance(value, (QuerySet, models.Manager)):
+                    if callable(value):
+                        value = value(obj)
+        else:
+            # Run the attribute on the object, if it's callable.
             if not isinstance(value, (QuerySet, models.Manager)):
                 if callable(value):
                     value = value()
-        elif hasattr(self, prefix):
-            value = getattr(self, prefix)
-            if not isinstance(value, (QuerySet, models.Manager)):
-                if callable(value):
-                    value = value(obj)
-        else:
-            raise SearchAdapterError("Could not find a property called {name!r} on either {obj!r} or {search_adapter!r}".format(
-                name = prefix,
-                obj = obj,
-                search_adapter = self,
-            ))
         # Look up recursive fields.
         if len(name_parts) == 2:
             if isinstance(value, (QuerySet, models.Manager)):
