@@ -2,10 +2,7 @@
 
 from __future__ import unicode_literals
 
-try:
-    from django.conf.urls import *
-except ImportError:  # Django<1.4
-    from django.conf.urls.defaults import *
+from django.conf.urls import url, patterns
 
 
 urlpatterns = patterns("watson.views",

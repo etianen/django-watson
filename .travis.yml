@@ -7,38 +7,30 @@ python:
   - 3.3
   - 3.4
 env:
-  - DJANGO=django==1.6.8
-  - DJANGO=django==1.6.8 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.6.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.7.1
-  - DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.6.11
+  - DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.7.7
+  - DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.8.1
+  - DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   exclude:
-    # Django 1.7 does not work with Python 2.6.
+    # Django >= 1.7 does not work with Python 2.6.
     - python: 2.6
-      env: DJANGO=django==1.7.1
+      env: DJANGO=django==1.7.7
     - python: 2.6
-      env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
     - python: 2.6
-      env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    # Python 3 does not work with MySQL DB engine.
-    - python: 3.2
-      env: DJANGO=django==1.6.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.3
-      env: DJANGO=django==1.6.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.4
-      env: DJANGO=django==1.6.8 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.2
-      env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.3
-      env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.4
-      env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  allow_failures:
-    - env: DJANGO=django==1.7.1
-    - env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-    - env: DJANGO=django==1.7.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 2.6
+      env: DJANGO=django==1.8.1
+    - python: 2.6
+      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - python: 2.6
+      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   fast_finish: true
 services:
   - postgresql
@@ -46,11 +38,11 @@ services:
 install:
   - travis_retry pip install $DJANGO
   - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install MySQL-python; fi
+  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
   - python setup.py -q install
 before_script:
   - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
   - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-script: python src/test_project/manage.py test watson
+script: python src/tests/runtests.py
 notifications:
   email: false

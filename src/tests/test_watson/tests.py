@@ -8,23 +8,16 @@ these tests have been amended to 'fooo' and 'baar'. Ho hum.
 
 from __future__ import unicode_literals
 
-import os, json
+import json
 try:
     from unittest import skipUnless
 except:
     from django.utils.unittest import skipUnless
 
-from django.db import models
 from django.test import TestCase
 from django.core.management import call_command
-try:
-    from django.conf.urls import *
-except ImportError:  # Django<1.4
-    from django.conf.urls.defaults import *
 from django.conf import settings
-from django.contrib import admin
 from django.contrib.auth.models import User
-from django.http import HttpResponseNotFound, HttpResponseServerError
 from django import template
 from django.utils.encoding import force_text
 
@@ -32,53 +25,8 @@ import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
 from watson.models import SearchEntry
 
-
-class TestModelBase(models.Model):
-
-    title = models.CharField(
-        max_length = 200,
-    )
-    
-    content = models.TextField(
-        blank = True,
-    )
-    
-    description = models.TextField(
-        blank = True,
-    )
-    
-    is_published = models.BooleanField(
-        default = True,
-    )
-    
-    def __unicode__(self):
-        return self.title
-
-    class Meta:
-        abstract = True
-        app_label = "auth"  # Hack: Cannot use an app_label that is under South control, due to http://south.aeracode.org/ticket/520
-        
-        
-class WatsonTestModel1(TestModelBase):
-
-    pass
-
-
-str_pk_gen = 0;
-
-def get_str_pk():
-    global str_pk_gen
-    str_pk_gen += 1;
-    return str(str_pk_gen)
-    
-    
-class WatsonTestModel2(TestModelBase):
-
-    id = models.CharField(
-        primary_key = True,
-        max_length = 100,
-        default = get_str_pk
-    )
+from test_watson.models import WatsonTestModel1, WatsonTestModel2
+from test_watson import admin  # Force early registration of all admin models.
 
 
 class RegistrationTest(TestCase):
@@ -192,11 +140,11 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("fooo1_selective").count(), 0)
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
         # Run the rebuild command.
-        call_command("buildwatson", "WatsonTestModel1", verbosity=0)
+        call_command("buildwatson", "test_watson.WatsonTestModel1", verbosity=0)
         # Test that the update is now applied to selected model.
         self.assertEqual(watson.search("fooo1_selective").count(), 1)
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
-        call_command("buildwatson", "WatsonTestModel1", "WatsonTestModel2", verbosity=0)
+        call_command("buildwatson", "test_watson.WatsonTestModel1", "test_watson.WatsonTestModel2", verbosity=0)
         # Test that the update is now applied to multiple selected models.
         self.assertEqual(watson.search("fooo1_selective").count(), 1)
         self.assertEqual(watson.search("fooo2_selective").count(), 1)
@@ -538,52 +486,11 @@ class ComplexRegistrationTest(SearchTestBase):
         self.assertEqual(complex_registration_search_engine.filter(WatsonTestModel2, "DESCRIPTION").count(), 0)
 
 
-class WatsonTestModel1Admin(watson.SearchAdmin):
-
-    search_fields = ("title", "description", "content",)
-    
-    list_display = ("title",)
-    
-    
-admin.site.register(WatsonTestModel1, WatsonTestModel1Admin)
-
-
-urlpatterns = patterns("",
-
-    url("^simple/", include("watson.urls")),
-    
-    url("^custom/", include("watson.urls"), kwargs={
-        "query_param": "fooo",
-        "empty_query_redirect": "/simple/",
-        "extra_context": {
-            "foo": "bar",
-            "foo2": lambda: "bar2",
-        },
-        "paginate_by": 10,
-    }),
-    
-    url("^admin/", include(admin.site.urls)),
-
-)
-
-
-def handler404(request):
-    return HttpResponseNotFound("Not found")
-    
-    
-def handler500(request):
-    return HttpResponseServerError("Server error")
-
-
 class AdminIntegrationTest(SearchTestBase):
 
-    urls = "watson.tests"
+    urls = "test_watson.urls"
     
     def setUp(self):
-        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
-        settings.TEMPLATE_DIRS = (
-            os.path.join(os.path.dirname(admin.__file__), "templates"),
-        )
         super(AdminIntegrationTest, self).setUp()
         self.user = User(
             username = "foo",
@@ -596,28 +503,21 @@ class AdminIntegrationTest(SearchTestBase):
     @skipUnless("django.contrib.admin" in settings.INSTALLED_APPS, "Django admin site not installed")
     def testAdminIntegration(self):
         # Log the user in.
-        if hasattr(self, "settings"):
-            with self.settings(INSTALLED_APPS=tuple(set(tuple(settings.INSTALLED_APPS) + ("django.contrib.sessions",)))):  # HACK: Without this the client won't log in, for some reason.
-                self.client.login(
-                    username = "foo",
-                    password = "bar",
-                )
-        else:
-            self.client.login(
-                username = "foo",
-                password = "bar",
-            )
+        self.client.login(
+            username = "foo",
+            password = "bar",
+        )
         # Test a search with no query.
-        response = self.client.get("/admin/auth/watsontestmodel1/")
+        response = self.client.get("/admin/test_watson/watsontestmodel1/")
         self.assertContains(response, "instance11")
         self.assertContains(response, "instance12")
         self.assertContains(response, "searchbar")  # Ensure that the search bar renders.
         # Test a search for all the instances.
-        response = self.client.get("/admin/auth/watsontestmodel1/?q=title content description")
+        response = self.client.get("/admin/test_watson/watsontestmodel1/?q=title content description")
         self.assertContains(response, "instance11")
         self.assertContains(response, "instance12")
         # Test a search for half the instances.
-        response = self.client.get("/admin/auth/watsontestmodel1/?q=instance11")
+        response = self.client.get("/admin/test_watson/watsontestmodel1/?q=instance11")
         self.assertContains(response, "instance11")
         self.assertNotContains(response, "instance12")
         
@@ -625,19 +525,11 @@ class AdminIntegrationTest(SearchTestBase):
         super(AdminIntegrationTest, self).tearDown()
         self.user.delete()
         del self.user
-        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
         
         
 class SiteSearchTest(SearchTestBase):
 
-    urls = "watson.tests"
-    
-    def setUp(self):
-        self.old_TEMPLATE_DIRS = settings.TEMPLATE_DIRS
-        settings.TEMPLATE_DIRS = (
-            os.path.join(os.path.dirname(admin.__file__), "templates"),
-        )
-        super(SiteSearchTest, self).setUp()
+    urls = "test_watson.urls"
     
     def testSiteSearch(self):
         # Test a search than should find everything.
@@ -716,7 +608,3 @@ class SiteSearchTest(SearchTestBase):
         # Test a search with an invalid page.
         response = self.client.get("/custom/json/?fooo=title&page=200")
         self.assertEqual(response.status_code, 404)
-        
-    def tearDown(self):
-        super(SiteSearchTest, self).tearDown()
-        settings.TEMPLATE_DIRS = self.old_TEMPLATE_DIRS
