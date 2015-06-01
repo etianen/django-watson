@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import sys
+import sys, os, os.path
 from optparse import OptionParser
 
 
@@ -33,7 +33,10 @@ def main():
         DEBUG = False,
         DATABASES = {
             "default": {
-                "ENGINE": "django.db.backends.sqlite3",
+                "ENGINE": os.environ.get("DB_ENGINE", 'django.db.backends.sqlite3'),
+                "NAME": os.environ.get("DB_NAME", os.path.join(os.path.dirname(__file__), 'db.sqlite3')),
+                "USER": os.environ.get("DB_USER", ""),
+                "PASSWORD": os.environ.get("DB_PASSWORD", ""),
             }
         },
         ROOT_URLCONF = "urls",
