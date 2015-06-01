@@ -51,15 +51,9 @@ complex_registration_search_engine = SearchEngine("restricted")
 
 
 class InstallUninstallTestBase(TestCase):
-
-    def testUninstallAndInstall(self):
-        # Not too much to test here, as some backends don't require installation.
-        # Just make sure the commands don't error.
-        call_command("uninstallwatson", verbosity=0)
-        call_command("installwatson", verbosity=0)
         
     @skipUnless(get_backend().requires_installation, "search backend does not require installation")
-    def testRealInstallAndUninstall(self):
+    def testUninstallAndInstall(self):
         backend = get_backend()
         call_command("uninstallwatson", verbosity=0)
         self.assertFalse(backend.is_installed())
