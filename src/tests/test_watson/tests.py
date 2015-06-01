@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Tests for django-watson.
 
@@ -284,6 +285,14 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
         self.assertEqual(watson.search("MODEL2 INSTANCE11").count(), 0)
 
+    def testSearchWithAccent(self):
+        WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 café",
+            description = "description model1 instance13",
+        )
+        self.assertEqual(watson.search("café").count(), 1)
+
     def testSearchWithApostrophe(self):
         WatsonTestModel1.objects.create(
             title = "title model1 instance12",
@@ -298,7 +307,7 @@ class SearchTest(SearchTestBase):
             content = "'content model1 instance13",
             description = "description model1 instance13",
         )
-        self.assertEqual(watson.search("'content").count(), 1)
+        self.assertTrue(watson.search("'content").exists())  # Some database engines ignore leading apostrophes, some count them.
         
     @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
     def testMultiTablePrefixSearch(self):

@@ -18,15 +18,17 @@ def regex_from_word(word):
     return "(\s{word})|(^{word})".format(
         word = re.escape(word),
     )
-    
-    
-def make_escaper(badchars):
-    """Creates an efficient escape function that strips the given characters from the string."""
-    translation_table = dict((ord(c), None) for c in badchars)
-    translation_table[ord("'")] = "''"
-    def escaper(text):
-        return force_text(text, errors="ignore").translate(translation_table)
-    return escaper
+
+
+RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
+RE_NON_WORD = re.compile(r"[^ \w\-']", re.UNICODE)
+
+
+def escape_query(text):
+    text = force_text(text)
+    text = RE_SPACE.sub(" ", text)  # Standardize spacing.
+    text = RE_NON_WORD.sub("", text)  # Remove non-word characters.
+    return text
 
 
 class SearchBackend(six.with_metaclass(abc.ABCMeta)):
@@ -154,9 +156,6 @@ class RegexSearchBackend(RegexSearchMixin, SearchBackend):
     """A search backend that works with SQLite3."""
 
 
-escape_postgres_query_chars = make_escaper("():|!&*")
-
-
 class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
@@ -167,9 +166,9 @@ class PostgresSearchBackend(SearchBackend):
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
         return " & ".join(
-            "{0}:*".format(word)
+            "$${0}$$:*".format(word)
             for word
-            in escape_postgres_query_chars(text).split()
+            in escape_query(text).split()
         )
     
     def is_installed(self):
@@ -310,7 +309,11 @@ class PostgresLegacySearchBackend(PostgresSearchBackend):
     
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-        return " & ".join(escape_postgres_query_chars(text).split())
+        return " & ".join(
+            "$${0}$$".format(word)
+            for word
+            in escape_query(text).split()
+        )
 
 
 class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBackend):
@@ -322,16 +325,14 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
     Use if your postgres vesion is less than 8.3, and you absolutely can't live without
     prefix matching. Beware, this backend can get slow with large datasets! 
     """
-        
 
-escape_mysql_boolean_query_chars = make_escaper("+-<>()*\".!:,;")
 
 def escape_mysql_boolean_query(search_text):
     return " ".join(
         '+{word}*'.format(
             word = word,
         )
-        for word in escape_mysql_boolean_query_chars(search_text).split()
+        for word in escape_query(search_text).split()
     )
 
 
