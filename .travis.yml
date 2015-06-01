@@ -31,6 +31,15 @@ matrix:
       env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
     - python: 2.6
       env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    # mysqlclient does not work with Python 2.6 or 3.2.
+    - python: 2.6
+      env: DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 3.2
+      env: DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 3.2
+      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - python: 3.2
+      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   fast_finish: true
 services:
   - postgresql
