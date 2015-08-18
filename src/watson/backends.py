@@ -443,17 +443,8 @@ class MySQLSearchBackend(SearchBackend):
 
 def get_postgresql_version(connection):
     """Returns the version number of the PostgreSQL connection."""
-    try:
-        from django.db.backends.postgresql.version import get_version  # Django 1.3
-    except ImportError:
-        # Use the Django 1.4 method.
-        from django.db.backends.postgresql_psycopg2.version import get_version
-        return get_version(connection)
-    else:
-        # Use the Django 1.3 method. 
-        cursor = connection.cursor()
-        major, major2, minor = get_version(cursor)
-        return major * 10000 + major2 * 100 + minor
+    from django.db.backends.postgresql_psycopg2.version import get_version
+    return get_version(connection)
         
         
 class AdaptiveSearchBackend(SearchBackend):
