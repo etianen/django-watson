@@ -351,14 +351,15 @@ class MySQLSearchBackend(SearchBackend):
     def do_install(self):
         """Executes the MySQL specific SQL code to install django-watson."""
         cursor = connection.cursor()
-        # Drop all foreign keys on the watson_searchentry table.
-        cursor.execute("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'watson_searchentry' AND CONSTRAINT_TYPE = 'FOREIGN KEY'")
-        for constraint_name, in cursor.fetchall():
-            cursor.execute("ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
-                constraint_name = constraint_name,
-            ))
         # Change the storage engine to MyISAM for older MySQL versions.
         if get_mysql_version(connection) < (5, 6, 0):
+            # Drop all foreign keys on the watson_searchentry table.
+            cursor.execute("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'watson_searchentry' AND CONSTRAINT_TYPE = 'FOREIGN KEY'")
+            for constraint_name, in cursor.fetchall():
+                cursor.execute("ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
+                    constraint_name = constraint_name,
+                ))
+            # Change the storage engine.
             cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
         # Add the full text indexes.
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
