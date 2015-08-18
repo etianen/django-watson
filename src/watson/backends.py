@@ -336,6 +336,10 @@ def escape_mysql_boolean_query(search_text):
     )
 
 
+def get_mysql_version(connection):
+    return connection.mysql_version
+
+
 class MySQLSearchBackend(SearchBackend):
 
     def is_installed(self):
@@ -353,8 +357,9 @@ class MySQLSearchBackend(SearchBackend):
             cursor.execute("ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
                 constraint_name = constraint_name,
             ))
-        # Change the storage engine to MyISAM.
-        cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
+        # Change the storage engine to MyISAM for older MySQL versions.
+        if get_mysql_version(connection) < (5, 6, 0):
+            cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
         # Add the full text indexes.
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
         cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title ON watson_searchentry (title)")
