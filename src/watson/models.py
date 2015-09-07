@@ -70,6 +70,9 @@ class SearchEntry(models.Model):
 
     meta_encoded = models.TextField()
 
+    def _deserialize_meta(self):
+        return json.loads(self.meta_encoded)
+
     @property
     def meta(self):
         """Returns the meta information stored with the search entry."""
@@ -77,7 +80,7 @@ class SearchEntry(models.Model):
         if hasattr(self, META_CACHE_KEY):
             return getattr(self, META_CACHE_KEY)
         # Decode the meta.
-        meta_value = json.loads(self.meta_encoded)
+        meta_value = self._deserialize_meta()
         setattr(self, META_CACHE_KEY, meta_value)
         return meta_value
 
