@@ -68,8 +68,11 @@ def main():
     except AttributeError:
         pass  # This is Django < 1.7
     # Configure the test runner.
-    from django.test.utils import get_runner
-    TestRunner = get_runner(settings)
+    try:
+        from django.test.utils import get_runner
+        TestRunner = get_runner(settings)
+    except ImportError:
+        from django.test.simple import DjangoTestSuiteRunner as TestRunner
     test_runner = TestRunner(
         verbosity = int(options.verbosity),
         interactive = options.interactive,

@@ -4,19 +4,21 @@ from __future__ import unicode_literals, print_function
 
 from optparse import make_option
 
+from compat import force_text
 from django.core.management.base import BaseCommand, CommandError
 from django.db.models import get_model
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.utils.encoding import force_text
 from django.utils.translation import activate
 from django.conf import settings
-
 
 from watson.registration import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
 
+# Backwards compatibility
+from compat import atomic
+transaction.atomic = atomic
 
 # Sets up registration for django-watson's admin integration.
 admin.autodiscover()

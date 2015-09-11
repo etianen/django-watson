@@ -15,12 +15,12 @@ try:
 except:
     from django.utils.unittest import skipUnless
 
+from compat import force_text
 from django.test import TestCase
 from django.core.management import call_command
 from django.conf import settings
 from django.contrib.auth.models import User
 from django import template
-from django.utils.encoding import force_text
 
 import watson
 from watson.registration import RegistrationError, get_backend, SearchEngine
