@@ -29,6 +29,7 @@ setup(
             "templates/watson/includes/*.html",
         ],
     },
+    install_requires=open('requirements.txt').read().split('\n'),
     classifiers=[
         "Development Status :: 5 - Production/Stable",
         "Environment :: Web Environment",
