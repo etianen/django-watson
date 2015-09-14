@@ -46,6 +46,7 @@ services:
   - mysql
 install:
   - travis_retry pip install $DJANGO
+  - travis_retry pip install -r requirements.txt
   - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
   - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
   - python setup.py -q install
