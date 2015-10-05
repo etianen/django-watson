@@ -103,9 +103,9 @@ class SearchAdapter(object):
 
         You can access the title of the search entry as `entry.title` in your search results.
 
-        The default implementation returns `force_text(obj)`.
+        The default implementation returns `force_text(obj)` truncated to 1000 characters.
         """
-        return force_text(obj)
+        return force_text(obj)[:1000]
 
     def get_description(self, obj):
         """
