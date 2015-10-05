@@ -4,13 +4,16 @@ from __future__ import unicode_literals
 
 import re, abc
 
+from compat import force_text, six
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, transaction
 from django.db.models import Q
-from django.utils.encoding import force_text
-from django.utils import six
 
 from watson.models import SearchEntry, has_int_pk
+
+# Backwards compatibility
+from compat import atomic
+transaction.atomic = atomic
 
 
 def regex_from_word(word):

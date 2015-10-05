@@ -8,6 +8,7 @@ from threading import local
 from functools import wraps
 from weakref import WeakValueDictionary
 
+from compat import force_text
 from django.conf import settings
 from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
@@ -16,7 +17,6 @@ from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
-from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 try:
     from importlib import import_module
