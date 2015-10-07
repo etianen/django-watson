@@ -15,7 +15,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.db.models.signals import post_save, pre_delete
+from django.db.models.signals import post_save, pre_delete, m2m_changed
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
 try:
@@ -381,6 +381,7 @@ class SearchEngine(object):
         # Connect to the signalling framework.
         post_save.connect(self._post_save_receiver, model)
         pre_delete.connect(self._pre_delete_receiver, model)
+        m2m_changed.connect(self._post_save_receiver, model)
 
     def unregister(self, model):
         """
