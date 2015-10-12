@@ -2,9 +2,7 @@
 
 from __future__ import unicode_literals
 
-import sys
-import json
-import types
+import sys, json
 from itertools import chain, islice
 from threading import local
 from functools import wraps
@@ -20,7 +18,6 @@ from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
 from django.utils.html import strip_tags
-from django.utils.functional import Promise
 from django.core.serializers.json import DjangoJSONEncoder
 try:
     from importlib import import_module
@@ -28,24 +25,6 @@ except ImportError:
     from django.utils.importlib import import_module
 
 from watson.models import SearchEntry, has_int_pk
-
-
-class UniversalEncoder(DjangoJSONEncoder):
-    ENCODER_BY_TYPE = {
-        set: list,
-        frozenset: list,
-        types.GeneratorType: list,
-        bytes: lambda o: o.decode('utf-8', errors='replace'),
-    }
-
-    def default(self, obj):
-        encoder = self.ENCODER_BY_TYPE.get(type(obj))
-        if encoder:
-            return encoder(obj)
-        elif isinstance(obj, Promise):
-            return force_text(obj)
-        else:
-            return super(UniversalEncoder, self).default(obj)
 
 
 class SearchAdapterError(Exception):
@@ -172,6 +151,18 @@ class SearchAdapter(object):
             (field_name, self._resolve_field(obj, field_name))
             for field_name in self.store
         )
+
+    def serialized_meta(self, obj):
+        """serialise meta ready to be saved in "meta_encoded"."""
+        meta_obj = self.get_meta(obj)
+        return json.dumps(meta_obj, cls=DjangoJSONEncoder)
+
+    def deserialize_meta(self, meta_encoded):
+        """
+        deserialize the encoded meta string for use in views etc., this is
+        used by SearchEntry's _deserialize_meta method to create the "meta" property
+        """
+        return json.loads(meta_encoded)
 
     def get_live_queryset(self):
         """
@@ -461,10 +452,6 @@ class SearchEngine(object):
             )
         return object_id_int, search_entries
 
-    def serialize_meta(self, meta_obj):
-        """serialise meta ready to be saved in "meta_encoded"."""
-        return json.dumps(meta_obj, cls=UniversalEncoder)
-
     def _update_obj_index_iter(self, obj):
         """Either updates the given object index, or yields an unsaved search entry."""
         model = obj.__class__
@@ -478,7 +465,7 @@ class SearchEngine(object):
             "description": adapter.get_description(obj),
             "content": adapter.get_content(obj),
             "url": adapter.get_url(obj),
-            "meta_encoded": self.serialize_meta(adapter.get_meta(obj)),
+            "meta_encoded": adapter.serialized_meta(obj),
         }
         # Try to get the existing search entry.
         object_id_int, search_entries = self._get_entries_for_obj(obj)

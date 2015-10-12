@@ -6,6 +6,8 @@ import json
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from django.utils.functional import cached_property
+
 try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:
@@ -71,9 +73,13 @@ class SearchEntry(models.Model):
     meta_encoded = models.TextField()
 
     def _deserialize_meta(self):
-        return json.loads(self.meta_encoded)
+        from watson.registration import SearchEngine
+        engine = SearchEngine._created_engines[self.engine_slug]
+        model = self.content_type.model_class()
+        adapter = engine.get_adapter(model)
+        return adapter.deserialize_meta(self.meta_encoded)
 
-    @property
+    @cached_property
     def meta(self):
         """Returns the meta information stored with the search entry."""
         # Attempt to use the cached value.
