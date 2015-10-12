@@ -75,7 +75,7 @@ class SearchEntry(models.Model):
     def _deserialize_meta(self):
         from watson.registration import SearchEngine
         engine = SearchEngine._created_engines[self.engine_slug]
-        model = self.content_type.model_class()
+        model = ContentType.objects.get_for_id(self.content_type_id).model_class()
         adapter = engine.get_adapter(model)
         return adapter.deserialize_meta(self.meta_encoded)
 

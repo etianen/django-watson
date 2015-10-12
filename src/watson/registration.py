@@ -152,7 +152,7 @@ class SearchAdapter(object):
             for field_name in self.store
         )
 
-    def serialized_meta(self, obj):
+    def serialize_meta(self, obj):
         """serialise meta ready to be saved in "meta_encoded"."""
         meta_obj = self.get_meta(obj)
         return json.dumps(meta_obj, cls=DjangoJSONEncoder)
@@ -465,7 +465,7 @@ class SearchEngine(object):
             "description": adapter.get_description(obj),
             "content": adapter.get_content(obj),
             "url": adapter.get_url(obj),
-            "meta_encoded": adapter.serialized_meta(obj),
+            "meta_encoded": adapter.serialize_meta(obj),
         }
         # Try to get the existing search entry.
         object_id_int, search_entries = self._get_entries_for_obj(obj)
