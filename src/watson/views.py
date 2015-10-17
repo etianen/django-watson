@@ -65,21 +65,25 @@ class SearchMixin(object):
         """Generates context variables."""
         context = super(SearchMixin, self).get_context_data(**kwargs)
         context["query"] = self.query
+	
+	for key, value in six.iteritems(kwargs):
+		context[key] = value
         # Process extra context.
         for key, value in six.iteritems(self.get_extra_context()):
             if callable(value):
                 value = value()
             context[key] = value
+	#import pdb; pdb.set_trace()
         return context
     
-    def get(self, request, *args, **kwargs):
+    def get(self, request):
         """Performs a GET request."""
         self.query = self.get_query(request)
         if not self.query:
             empty_query_redirect = self.get_empty_query_redirect()
             if empty_query_redirect:
                 return redirect(empty_query_redirect)
-        return super(SearchMixin, self).get(request, *args, **kwargs)
+	return super(SearchMixin, self).get(request)
 
 
 class SearchView(SearchMixin, generic.ListView):
