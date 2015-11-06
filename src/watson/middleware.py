@@ -14,13 +14,13 @@ class SearchContextMiddleware(object):
     
     def process_request(self, request):
         """Starts a new search context."""
-        request.META[(WATSON_MIDDLEWARE_FLAG, self)] = True
+        request.META[WATSON_MIDDLEWARE_FLAG] = self
         search_context_manager.start()
     
     def _close_search_context(self, request):
         """Closes the search context."""
-        if request.META.get((WATSON_MIDDLEWARE_FLAG, self), False):
-            del request.META[(WATSON_MIDDLEWARE_FLAG, self)]
+        if WATSON_MIDDLEWARE_FLAG in request.META:
+            del request.META[WATSON_MIDDLEWARE_FLAG]
             search_context_manager.end()
     
     def process_response(self, request, response):
