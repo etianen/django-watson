@@ -1,6 +1,12 @@
 django-watson changelog
 =======================
 
+1.1.9 - 09/11/2015
+------------------
+
+* Customization meta serialization (@samuelcolvin).
+* Minor bugfixes (@etianen, @Fitblip).
+
 
 1.1.8 - 24/04/2015
 ------------------
