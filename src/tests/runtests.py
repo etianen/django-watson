@@ -60,6 +60,7 @@ def main():
         USE_TZ = True,
         STATIC_URL = "/static/",
         TEST_RUNNER = "django.test.runner.DiscoverRunner",
+        WATSON_BACKEND = os.environ.get("SEARCH_BACKEND", None)
     )
     # Run Django setup (1.7+).
     import django
