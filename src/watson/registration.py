@@ -11,7 +11,6 @@ from weakref import WeakValueDictionary
 from django.conf import settings
 from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
-from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -430,6 +429,8 @@ class SearchEngine(object):
 
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
+        from django.contrib.contenttypes.models import ContentType
+
         model = obj.__class__
         content_type = ContentType.objects.get_for_model(model)
         object_id = force_text(obj.pk)
@@ -454,6 +455,8 @@ class SearchEngine(object):
 
     def _update_obj_index_iter(self, obj):
         """Either updates the given object index, or yields an unsaved search entry."""
+        from django.contrib.contenttypes.models import ContentType
+
         model = obj.__class__
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
@@ -505,6 +508,8 @@ class SearchEngine(object):
 
     def _create_model_filter(self, models):
         """Creates a filter for the given model/queryset list."""
+        from django.contrib.contenttypes.models import ContentType
+
         filters = Q()
         for model in models:
             filter = Q()

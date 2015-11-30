@@ -1,45 +1,23 @@
 language: python
 sudo: false
+cache: pip
 python:
-  - 2.6
   - 2.7
-  - 3.2
   - 3.3
   - 3.4
+  - 3.5
 env:
-  - DJANGO=django==1.6.11
-  - DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.7.7
-  - DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.8.1
-  - DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  matrix:
+    - DJANGO="Django<1.8,>=1.7"
+    - DJANGO="Django<1.8,>=1.7" DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - DJANGO="Django<1.8,>=1.7" DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - DJANGO="Django<1.9,>=1.8"
+    - DJANGO="Django<1.9,>=1.8" DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - DJANGO="Django<1.9,>=1.8" DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+    - DJANGO="-e git+https://github.com/django/django.git@master#egg=Django"
+    - DJANGO="-e git+https://github.com/django/django.git@master#egg=Django" DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+    - DJANGO="-e git+https://github.com/django/django.git@master#egg=Django" DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
-  exclude:
-    # Django >= 1.7 does not work with Python 2.6.
-    - python: 2.6
-      env: DJANGO=django==1.7.7
-    - python: 2.6
-      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-    - python: 2.6
-      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 2.6
-      env: DJANGO=django==1.8.1
-    - python: 2.6
-      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-    - python: 2.6
-      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    # mysqlclient does not work with Python 2.6 or 3.2.
-    - python: 2.6
-      env: DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.2
-      env: DJANGO=django==1.6.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.2
-      env: DJANGO=django==1.7.7 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-    - python: 3.2
-      env: DJANGO=django==1.8.1 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   fast_finish: true
 services:
   - postgresql
