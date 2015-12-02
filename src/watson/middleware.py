@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from django.core.exceptions import ImproperlyConfigured
 
-from watson.registration import search_context_manager
+from watson.search import search_context_manager
 
 
 WATSON_MIDDLEWARE_FLAG = "watson.search_context_middleware_active"

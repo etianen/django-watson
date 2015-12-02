@@ -14,7 +14,7 @@ from django.utils.translation import activate
 from django.conf import settings
 
 
-from watson.registration import SearchEngine, _bulk_save_search_entries
+from watson.search import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
 
 

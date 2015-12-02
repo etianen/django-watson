@@ -4,13 +4,13 @@ from __future__ import unicode_literals
 
 from django.core.management.base import NoArgsCommand
 
-from watson.registration import get_backend
+from watson.search import get_backend
 
 
 class Command(NoArgsCommand):
 
     help = "Destroys the database indices needed by django-watson."
-    
+
     def handle_noargs(self, **options):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))
