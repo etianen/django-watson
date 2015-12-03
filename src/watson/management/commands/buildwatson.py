@@ -5,7 +5,7 @@ from __future__ import unicode_literals, print_function
 from optparse import make_option
 
 from django.core.management.base import BaseCommand, CommandError
-from django.db.models import get_model
+from django.apps import apps
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
@@ -14,7 +14,7 @@ from django.utils.translation import activate
 from django.conf import settings
 
 
-from watson.registration import SearchEngine, _bulk_save_search_entries
+from watson.search import SearchEngine, _bulk_save_search_entries
 from watson.models import SearchEntry
 
 
@@ -83,7 +83,7 @@ class Command(BaseCommand):
         models = []
         for model_name in args:
             try:
-                model = get_model(*model_name.split("."))  # app label, model name
+                model = apps.get_model(*model_name.split("."))  # app label, model name
             except TypeError:  # were we given only model name without app_name?
                 registered_models = search_engine.get_registered_models()
                 matching_models = [x for x in registered_models if x.__name__ == model_name]

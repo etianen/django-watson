@@ -73,7 +73,7 @@ class SearchEntry(models.Model):
     meta_encoded = models.TextField()
 
     def _deserialize_meta(self):
-        from watson.registration import SearchEngine
+        from watson.search import SearchEngine
         engine = SearchEngine._created_engines[self.engine_slug]
         model = ContentType.objects.get_for_id(self.content_type_id).model_class()
         adapter = engine.get_adapter(model)

@@ -5,7 +5,7 @@ from __future__ import unicode_literals
 from django.contrib import admin
 from django.contrib.admin.views.main import ChangeList
 
-from watson.registration import SearchEngine, SearchAdapter
+from watson.search import SearchEngine, SearchAdapter
 
 
 admin_search_engine = SearchEngine("admin")

@@ -22,8 +22,7 @@ from django.contrib.auth.models import User
 from django import template
 from django.utils.encoding import force_text
 
-import watson
-from watson.registration import RegistrationError, get_backend, SearchEngine
+from watson import search as watson
 from watson.models import SearchEntry
 
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
@@ -31,30 +30,30 @@ from test_watson import admin  # Force early registration of all admin models.
 
 
 class RegistrationTest(TestCase):
-    
+
     def testRegistration(self):
         # Register the model and test.
         watson.register(WatsonTestModel1)
         self.assertTrue(watson.is_registered(WatsonTestModel1))
-        self.assertRaises(RegistrationError, lambda: watson.register(WatsonTestModel1))
+        self.assertRaises(watson.RegistrationError, lambda: watson.register(WatsonTestModel1))
         self.assertTrue(WatsonTestModel1 in watson.get_registered_models())
         self.assertTrue(isinstance(watson.get_adapter(WatsonTestModel1), watson.SearchAdapter))
         # Unregister the model and text.
         watson.unregister(WatsonTestModel1)
         self.assertFalse(watson.is_registered(WatsonTestModel1))
-        self.assertRaises(RegistrationError, lambda: watson.unregister(WatsonTestModel1))
+        self.assertRaises(watson.RegistrationError, lambda: watson.unregister(WatsonTestModel1))
         self.assertTrue(WatsonTestModel1 not in watson.get_registered_models())
-        self.assertRaises(RegistrationError, lambda: isinstance(watson.get_adapter(WatsonTestModel1)))
+        self.assertRaises(watson.RegistrationError, lambda: isinstance(watson.get_adapter(WatsonTestModel1)))
 
 
-complex_registration_search_engine = SearchEngine("restricted")
+complex_registration_search_engine = watson.SearchEngine("restricted")
 
 
 class InstallUninstallTestBase(TestCase):
-        
-    @skipUnless(get_backend().requires_installation, "search backend does not require installation")
+
+    @skipUnless(watson.get_backend().requires_installation, "search backend does not require installation")
     def testUninstallAndInstall(self):
-        backend = get_backend()
+        backend = watson.get_backend()
         call_command("uninstallwatson", verbosity=0)
         self.assertFalse(backend.is_installed())
         call_command("installwatson", verbosity=0)
@@ -64,7 +63,7 @@ class InstallUninstallTestBase(TestCase):
 class SearchTestBase(TestCase):
 
     model1 = WatsonTestModel1
-    
+
     model2 = WatsonTestModel2
 
     def setUp(self):
@@ -168,14 +167,14 @@ class InternalsTest(SearchTestBase):
         # Delete a model and make sure that the search results match.
         self.test11.delete()
         self.assertEqual(watson.search("fooo").count(), 0)
-    
+
     def testSearchIndexUpdateDeferredByContext(self):
         with watson.update_index():
             self.test11.title = "fooo"
             self.test11.save()
             self.assertEqual(watson.search("fooo").count(), 0)
         self.assertEqual(watson.search("fooo").count(), 1)
-    
+
     def testSearchIndexUpdateAbandonedOnError(self):
         try:
             with watson.update_index():
@@ -186,14 +185,14 @@ class InternalsTest(SearchTestBase):
             pass
         # Test a search that should get not model.
         self.assertEqual(watson.search("fooo").count(), 0)
-        
+
     def testSkipSearchIndexUpdate(self):
         with watson.skip_index_update():
             self.test11.title = "fooo"
             self.test11.save()
         # Test a search that should get not model.
         self.assertEqual(watson.search("fooo").count(), 0)
-        
+
     def testNestedSkipInUpdateContext(self):
         with watson.update_index():
             self.test21.title = "baar"
@@ -228,12 +227,12 @@ class InternalsTest(SearchTestBase):
         call_command("buildwatson", verbosity=0)
         # Make sure that we have four again (including duplicates).
         self.assertEqual(search_entries.all().count(), 4)
-    
+
     def testEmptyFilterGivesAllResults(self):
         for model in (WatsonTestModel1, WatsonTestModel2):
             self.assertEqual(watson.filter(model, "").count(), 2)
             self.assertEqual(watson.filter(model, " ").count(), 2)
-        
+
     def testFilter(self):
         for model in (WatsonTestModel1, WatsonTestModel2):
             # Test can find all.
@@ -246,18 +245,18 @@ class InternalsTest(SearchTestBase):
         obj = watson.filter(WatsonTestModel1.objects.filter(title__icontains="TITLE"), "INSTANCE12").get()
         self.assertTrue(isinstance(obj, WatsonTestModel1))
         self.assertEqual(obj.title, "title model1 instance12")
-    
-    @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")    
+
+    @skipUnless(watson.get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
     def testPrefixFilter(self):
         self.assertEqual(watson.filter(WatsonTestModel1, "INSTAN").count(), 2)
-        
-        
+
+
 class SearchTest(SearchTestBase):
-    
+
     def emptySearchTextGivesNoResults(self):
         self.assertEqual(watson.search("").count(), 0)
-        self.assertEqual(watson.search(" ").count(), 0)        
-    
+        self.assertEqual(watson.search(" ").count(), 0)
+
     def testMultiTableSearch(self):
         # Test a search that should get all models.
         self.assertEqual(watson.search("TITLE").count(), 4)
@@ -302,11 +301,11 @@ class SearchTest(SearchTestBase):
             description = "description model1 instance13",
         )
         self.assertTrue(watson.search("'content").exists())  # Some database engines ignore leading apostrophes, some count them.
-        
-    @skipUnless(get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
+
+    @skipUnless(watson.get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
     def testMultiTablePrefixSearch(self):
         self.assertEqual(watson.search("DESCR").count(), 4)
-    
+
     def testLimitedModelList(self):
         # Test a search that should get all models.
         self.assertEqual(watson.search("TITLE", models=(WatsonTestModel1, WatsonTestModel2)).count(), 4)
@@ -325,7 +324,7 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("MODEL2", models=(WatsonTestModel1,)).count(), 0)
         self.assertEqual(watson.search("INSTANCE21", models=(WatsonTestModel1,)).count(), 0)
         self.assertEqual(watson.search("INSTANCE11", models=(WatsonTestModel2,)).count(), 0)
-        
+
     def testExcludedModelList(self):
         # Test a search that should get all models.
         self.assertEqual(watson.search("TITLE", exclude=()).count(), 4)
@@ -371,7 +370,7 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("INSTANCE21", models=(WatsonTestModel2.objects.filter(
             title__icontains = "MODEL1",
         ),)).count(), 0)
-        
+
     def testExcludedModelQuerySet(self):
         # Test a search that should get all models.
         self.assertEqual(watson.search("TITLE", exclude=(WatsonTestModel1.objects.filter(title__icontains="FOOO"), WatsonTestModel2.objects.filter(title__icontains="FOOO"),)).count(), 4)
@@ -398,7 +397,7 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("INSTANCE21", exclude=(WatsonTestModel2.objects.filter(
             title__icontains = "MODEL2",
         ),)).count(), 0)
-        
+
     def testKitchenSink(self):
         """For sanity, let's just test everything together in one giant search of doom!"""
         self.assertEqual(watson.search(
@@ -412,14 +411,14 @@ class SearchTest(SearchTestBase):
                 WatsonTestModel2.objects.filter(title__icontains="MODEL1"),
             )
         ).get().title, "title model1 instance11")
-        
-        
+
+
 class LiveFilterSearchTest(SearchTest):
-    
+
     model1 = WatsonTestModel1.objects.filter(is_published=True)
-    
+
     model2 = WatsonTestModel2.objects.filter(is_published=True)
-    
+
     def testUnpublishedModelsNotFound(self):
         # Make sure that there are four to find!
         self.assertEqual(watson.search("tItle Content Description").count(), 4)
@@ -430,15 +429,15 @@ class LiveFilterSearchTest(SearchTest):
         self.test21.save()
         # This should return 4, but two of them are unpublished.
         self.assertEqual(watson.search("tItle Content Description").count(), 2)
-        
+
     def testCanOverridePublication(self):
         # Unpublish two objects.
         self.test11.is_published = False
         self.test11.save()
         # This should still return 4, since we're overriding the publication.
         self.assertEqual(watson.search("tItle Content Description", models=(WatsonTestModel2, WatsonTestModel1._base_manager.all(),)).count(), 4)
-        
-        
+
+
 class RankingTest(SearchTestBase):
 
     def setUp(self):
@@ -450,24 +449,24 @@ class RankingTest(SearchTestBase):
 
     def testRankingParamPresentOnSearch(self):
         self.assertGreater(watson.search("TITLE")[0].watson_rank, 0)
-        
+
     def testRankingParamPresentOnFilter(self):
         self.assertGreater(watson.filter(WatsonTestModel1, "TITLE")[0].watson_rank, 0)
-        
+
     def testRankingParamAbsentOnSearch(self):
         self.assertRaises(AttributeError, lambda: watson.search("TITLE", ranking=False)[0].watson_rank)
-        
+
     def testRankingParamAbsentOnFilter(self):
         self.assertRaises(AttributeError, lambda: watson.filter(WatsonTestModel1, "TITLE", ranking=False)[0].watson_rank)
-    
-    @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
+
+    @skipUnless(watson.get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithSearch(self):
         self.assertEqual(
             [entry.title for entry in watson.search("FOOO")],
             ["title model1 instance11 fooo baar fooo", "title model1 instance12"]
         )
-            
-    @skipUnless(get_backend().supports_ranking, "search backend does not support ranking")
+
+    @skipUnless(watson.get_backend().supports_ranking, "search backend does not support ranking")
     def testRankingWithFilter(self):
         self.assertEqual(
             [entry.title for entry in watson.filter(WatsonTestModel1, "FOOO")],
@@ -479,15 +478,15 @@ class ComplexRegistrationTest(SearchTestBase):
 
     def testMetaStored(self):
         self.assertEqual(complex_registration_search_engine.search("instance11")[0].meta["is_published"], True)
-        
+
     def testMetaNotStored(self):
         self.assertRaises(KeyError, lambda: complex_registration_search_engine.search("instance21")[0].meta["is_published"])
-        
+
     def testFieldsExcludedOnSearch(self):
         self.assertEqual(complex_registration_search_engine.search("TITLE").count(), 4)
         self.assertEqual(complex_registration_search_engine.search("CONTENT").count(), 0)
         self.assertEqual(complex_registration_search_engine.search("DESCRIPTION").count(), 0)
-        
+
     def testFieldsExcludedOnFilter(self):
         self.assertEqual(complex_registration_search_engine.filter(WatsonTestModel1, "TITLE").count(), 2)
         self.assertEqual(complex_registration_search_engine.filter(WatsonTestModel1, "CONTENT").count(), 0)
@@ -500,7 +499,7 @@ class ComplexRegistrationTest(SearchTestBase):
 class AdminIntegrationTest(SearchTestBase):
 
     urls = "test_watson.urls"
-    
+
     def setUp(self):
         super(AdminIntegrationTest, self).setUp()
         self.user = User(
@@ -510,7 +509,7 @@ class AdminIntegrationTest(SearchTestBase):
         )
         self.user.set_password("bar")
         self.user.save()
-    
+
     @skipUnless("django.contrib.admin" in settings.INSTALLED_APPS, "Django admin site not installed")
     def testAdminIntegration(self):
         # Log the user in.
@@ -531,17 +530,17 @@ class AdminIntegrationTest(SearchTestBase):
         response = self.client.get("/admin/test_watson/watsontestmodel1/?q=instance11")
         self.assertContains(response, "instance11")
         self.assertNotContains(response, "instance12")
-        
+
     def tearDown(self):
         super(AdminIntegrationTest, self).tearDown()
         self.user.delete()
         del self.user
-        
-        
+
+
 class SiteSearchTest(SearchTestBase):
 
     urls = "test_watson.urls"
-    
+
     def testSiteSearch(self):
         # Test a search than should find everything.
         response = self.client.get("/simple/?q=title")
@@ -562,7 +561,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertNotContains(response, "instance12")
         self.assertNotContains(response, "instance21")
         self.assertNotContains(response, "instance22")
-        
+
     def testSiteSearchJSON(self):
         # Test a search that should find everything.
         response = self.client.get("/simple/json/?q=title")
@@ -573,7 +572,7 @@ class SiteSearchTest(SearchTestBase):
         self.assertTrue("title model1 instance12" in results)
         self.assertTrue("title model2 instance21" in results)
         self.assertTrue("title model2 instance22" in results)
-        
+
     def testSiteSearchCustom(self):
         # Test a search than should find everything.
         response = self.client.get("/custom/?fooo=title")
@@ -605,7 +604,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find nothing.
         response = self.client.get("/custom/?q=fooo")
         self.assertRedirects(response, "/simple/")
-        
+
     def testSiteSearchCustomJSON(self):
         # Test a search that should find everything.
         response = self.client.get("/custom/json/?fooo=title&page=last")
