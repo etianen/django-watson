@@ -2,13 +2,13 @@
 
 from __future__ import unicode_literals
 
-from django.conf.urls import url, patterns
+from django.conf.urls import url
+from . import views
 
+urlpatterns = [
 
-urlpatterns = patterns("watson.views",
-
-    url("^$", "search", name="search"),
+    url("^$", views.search, name="search"),
     
-    url("^json/$", "search_json", name="search_json"),
+    url("^json/$", views.search_json, name="search_json"),
 
-)
+]
