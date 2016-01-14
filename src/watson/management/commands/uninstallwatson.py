@@ -2,12 +2,12 @@
 
 from __future__ import unicode_literals
 
-from django.core.management.base import NoArgsCommand
+from django.core.management.base import BaseCommand
 
 from watson.search import get_backend
 
 
-class Command(NoArgsCommand):
+class Command(BaseCommand):
 
     help = "Destroys the database indices needed by django-watson."
 
