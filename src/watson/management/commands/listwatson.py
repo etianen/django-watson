@@ -7,7 +7,7 @@ class Command(BaseCommand):
 
     help = "List all registed models by django-watson."
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         """Runs the management command."""
         self.stdout.write("The following models are registed for the django-watson search engine:\n")
         for mdl in watson.get_registered_models():

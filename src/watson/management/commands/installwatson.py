@@ -11,7 +11,7 @@ class Command(BaseCommand):
 
     help = "Creates the database indices needed by django-watson."
 
-    def handle_noargs(self, **options):
+    def handle(self, *args, **options):
         """Runs the management command."""
         verbosity = int(options.get("verbosity", 1))
         backend = get_backend()
