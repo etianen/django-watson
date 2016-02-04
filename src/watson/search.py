@@ -191,16 +191,12 @@ class SearchContextError(Exception):
 def _bulk_save_search_entries(search_entries, batch_size=100):
     """Creates the given search entry data in the most efficient way possible."""
     if search_entries:
-        if hasattr(SearchEntry.objects, "bulk_create"):
-            search_entries = iter(search_entries)
-            while True:
-                search_entry_batch = list(islice(search_entries, 0, batch_size))
-                if not search_entry_batch:
-                    break
-                SearchEntry.objects.bulk_create(search_entry_batch)
-        else:
-            for search_entry in search_entries:
-                search_entry.save()
+        search_entries = iter(search_entries)
+        while True:
+            search_entry_batch = list(islice(search_entries, 0, batch_size))
+            if not search_entry_batch:
+                break
+            SearchEntry.objects.bulk_create(search_entry_batch)
 
 
 class SearchContextManager(local):
