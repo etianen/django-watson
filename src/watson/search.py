@@ -24,8 +24,6 @@ try:
 except ImportError:
     from django.utils.importlib import import_module
 
-from watson.models import SearchEntry, has_int_pk
-
 
 class SearchAdapterError(Exception):
 
@@ -190,6 +188,7 @@ class SearchContextError(Exception):
 
 def _bulk_save_search_entries(search_entries, batch_size=100):
     """Creates the given search entry data in the most efficient way possible."""
+    from watson.models import SearchEntry
     if search_entries:
         search_entries = iter(search_entries)
         while True:
@@ -328,7 +327,6 @@ class SkipSearchContext(SearchContext):
             self._context_manager.end()
 
 
-
 # The shared, thread-safe search context manager.
 search_context_manager = SearchContextManager()
 
@@ -426,6 +424,7 @@ class SearchEngine(object):
 
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
+        from watson.models import SearchEntry, has_int_pk
         model = obj.__class__
         content_type = ContentType.objects.get_for_model(model)
         object_id = force_text(obj.pk)
@@ -450,6 +449,7 @@ class SearchEngine(object):
 
     def _update_obj_index_iter(self, obj):
         """Either updates the given object index, or yields an unsaved search entry."""
+        from watson.models import SearchEntry
         model = obj.__class__
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
@@ -501,6 +501,7 @@ class SearchEngine(object):
 
     def _create_model_filter(self, models):
         """Creates a filter for the given model/queryset list."""
+        from watson.models import has_int_pk
         filters = Q()
         for model in models:
             filter = Q()
@@ -549,6 +550,7 @@ class SearchEngine(object):
 
     def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
+        from watson.models import SearchEntry
         # Check for blank search text.
         search_text = search_text.strip()
         if not search_text:
