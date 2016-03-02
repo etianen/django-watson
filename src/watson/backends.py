@@ -10,7 +10,7 @@ from django.db.models import Q
 from django.utils.encoding import force_text
 from django.utils import six
 
-from watson.models import SearchEntry, has_int_pk
+from watson.models import SearchEntry, has_int_pk, has_uuid_pk
 
 
 def regex_from_word(word):
@@ -263,10 +263,15 @@ class PostgresSearchBackend(SearchBackend):
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
         pk = model._meta.pk
+
+        ref_name_typecast = ""
         if has_int_pk(model):
             ref_name = "object_id_int"
         else:
             ref_name = "object_id"
+            if has_uuid_pk(model):
+                ref_name_typecast = "::uuid"
+        
         return queryset.extra(
             tables = ("watson_searchentry",),
             where = (
@@ -274,7 +279,8 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
                     search_config = self.search_config
                 ),
-                "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
+                "watson_searchentry.{ref_name}{ref_name_typecast} = {table_name}.{pk_name}".format(
+                    ref_name_typecast = ref_name_typecast,
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
                     pk_name = connection.ops.quote_name(pk.db_column or pk.attname),

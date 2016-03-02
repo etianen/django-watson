@@ -25,6 +25,18 @@ def has_int_pk(model):
         )
     )
 
+def has_uuid_pk(model):
+    """Tests whether the given model has an uuid primary key."""
+    pk = model._meta.pk
+    try:
+        if isinstance(pk, (models.UUIDField)):
+            return True
+    except NameError:
+        # UUIDField not defined prior to Django 1.8
+        return False
+
+    return isinstance(pk, models.ForeignKey) and has_uuid_pk(pk.rel.to)
+    
 
 META_CACHE_KEY = "_meta_cache"
 
