@@ -264,14 +264,17 @@ class PostgresSearchBackend(SearchBackend):
         content_type = ContentType.objects.get_for_model(model)
         pk = model._meta.pk
 
-        ref_name_typecast = ""
+        watson_ref_name_typecast = ""
+        model_ref_name_typecast = ""
         if has_int_pk(model):
             ref_name = "object_id_int"
         else:
             ref_name = "object_id"
             if has_uuid_pk(model):
-                ref_name_typecast = "::uuid"
-        
+                watson_ref_name_typecast = "::uuid"
+            else:
+                model_ref_name_typecast = "::text"
+
         return queryset.extra(
             tables = ("watson_searchentry",),
             where = (
@@ -279,11 +282,12 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
                     search_config = self.search_config
                 ),
-                "watson_searchentry.{ref_name}{ref_name_typecast} = {table_name}.{pk_name}".format(
-                    ref_name_typecast = ref_name_typecast,
+                "watson_searchentry.{ref_name}{watson_ref_name_typecast} = {table_name}.{pk_name}{model_ref_name_typecast}".format(
+                    watson_ref_name_typecast = watson_ref_name_typecast,
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
                     pk_name = connection.ops.quote_name(pk.db_column or pk.attname),
+                    model_ref_name_typecast = model_ref_name_typecast,
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
