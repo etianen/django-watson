@@ -31,7 +31,7 @@ def has_uuid_pk(model):
     try:
         if isinstance(pk, (models.UUIDField)):
             return True
-    except NameError:
+    except AttributeError:
         # UUIDField not defined prior to Django 1.8
         return False
 
