@@ -1,5 +1,12 @@
 # django-watson changelog
 
+
+## 1.2.1 - 07/03/2015
+
+- Fixing AppNotReady errors when registering django-watson (@etianen).
+- Minor tweaks and bugfixes (@SimonGreenhill, @etianen).
+
+
 ## 1.2.0 - 03/12/2015
 
 - **Breaking:** Updated the location of [search](https://github.com/etianen/django-watson/wiki/Searching-models) and
