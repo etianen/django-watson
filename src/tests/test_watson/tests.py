@@ -24,6 +24,7 @@ from django.utils.encoding import force_text
 
 from watson import search as watson
 from watson.models import SearchEntry
+from watson.backends import escape_query
 
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
 from test_watson import admin  # Force early registration of all admin models.
@@ -45,6 +46,38 @@ class RegistrationTest(TestCase):
         self.assertTrue(WatsonTestModel1 not in watson.get_registered_models())
         self.assertRaises(watson.RegistrationError, lambda: isinstance(watson.get_adapter(WatsonTestModel1)))
 
+class EscapingTest(TestCase):
+
+    def testEscaping(self):
+        # Test query escaping.
+        self.assertEqual(escape_query(""), "")
+        self.assertEqual(escape_query("abc"), "abc")
+        self.assertEqual(escape_query("abc def"), "abc def")
+        self.assertEqual(escape_query("abc      def"), "abc def")
+        self.assertEqual(escape_query("abc'def"), "abc'def")
+        self.assertEqual(escape_query("'abc&def"), "'abc&def")
+        self.assertEqual(escape_query("abc@def"), "abc@def")
+        self.assertEqual(escape_query("abc#def"), "abc#def")
+        self.assertEqual(escape_query("abc$def"), "abc$def")
+        self.assertEqual(escape_query("abc^def"), "abc^def")
+        self.assertEqual(escape_query("abc&def"), "abc&def")
+        self.assertEqual(escape_query("abc*def"), "abc*def")
+        self.assertEqual(escape_query("abc=def"), "abc=def")
+        self.assertEqual(escape_query("abc+def"), "abc+def")
+        self.assertEqual(escape_query("abc-def"), "abc-def")
+        self.assertEqual(escape_query("abc_def"), "abc_def")
+        self.assertEqual(escape_query("abc.def"), "abc.def")
+        self.assertEqual(escape_query("abc,def"), "abc,def")
+        # now the ones where we replace harmful characters
+        self.assertEqual(escape_query("&abc"), "abc")
+        self.assertEqual(escape_query("&&&abc"), "abc")
+        self.assertEqual(escape_query("abc&"), "abc")
+        self.assertEqual(escape_query("abc&&&"), "abc")
+        self.assertEqual(escape_query("abc|def"), "abc&def")
+        self.assertEqual(escape_query("abc!def"), "abc&def")
+        self.assertEqual(escape_query("abc:def"), "abc&def")
+        self.assertEqual(escape_query("abc(def"), "abc&def")
+        self.assertEqual(escape_query("abc)def"), "abc&def")
 
 complex_registration_search_engine = watson.SearchEngine("restricted")
 
@@ -286,21 +319,111 @@ class SearchTest(SearchTestBase):
         )
         self.assertEqual(watson.search("café").count(), 1)
 
-    def testSearchWithApostrophe(self):
-        WatsonTestModel1.objects.create(
+#     def testSearchWithApostrophe(self):
+#         WatsonTestModel1.objects.create(
+#             title = "title model1 instance12",
+#             content = "content model1 instance13 d'Argent",
+#             description = "description model1 instance13",
+#         )
+#         self.assertEqual(watson.search("d'Argent").count(), 1)
+#
+#     def testSearchWithLeadingApostrophe(self):
+#         WatsonTestModel1.objects.create(
+#             title = "title model1 instance12",
+#             content = "'content model1 instance13",
+#             description = "description model1 instance13",
+#         )
+#         self.assertTrue(watson.search("'content").exists())  # Some database engines ignore leading apostrophes, some count them.
+
+    def testSearchWithSpecialChars(self):
+        x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
             description = "description model1 instance13",
         )
         self.assertEqual(watson.search("d'Argent").count(), 1)
+        x.delete()
 
-    def testSearchWithLeadingApostrophe(self):
-        WatsonTestModel1.objects.create(
+        x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "'content model1 instance13",
             description = "description model1 instance13",
         )
         self.assertTrue(watson.search("'content").exists())  # Some database engines ignore leading apostrophes, some count them.
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc+def",
+        )
+        self.assertEqual(watson.search("abc+def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc&def",
+        )
+        self.assertEqual(watson.search("abc&def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc|def",
+        )
+        self.assertEqual(watson.search("abc|def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc:def",
+        )
+        self.assertEqual(watson.search("abc:def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc.def",
+        )
+        self.assertEqual(watson.search("abc.def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc,def",
+        )
+        self.assertEqual(watson.search("abc,def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc:def",
+        )
+        self.assertEqual(watson.search("abc:def").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc()",
+        )
+        self.assertEqual(watson.search("abc()").count(), 1)
+        x.delete()
+
+        x = WatsonTestModel1.objects.create(
+            title = "title model1 instance12",
+            content = "content model1 instance13 d'Argent",
+            description = "description abc(def",
+        )
+        self.assertEqual(watson.search("abc(def").count(), 1)
+        x.delete()
+
 
     @skipUnless(watson.get_backend().supports_prefix_matching, "Search backend does not support prefix matching.")
     def testMultiTablePrefixSearch(self):

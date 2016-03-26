@@ -21,15 +21,21 @@ def regex_from_word(word):
 
 
 RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
-RE_NON_WORD = re.compile(r"[^ \w\-\.']", re.UNICODE)
 
+# (below was researched and tested on PostgreSQL 9.5)
+# the only chars that to_tsquery does not really like are "! & : ( ) |"
+# "&" does not harm us as it converts to AND which we do anyway
+# "|" is syntactically correct, but performs OR lookup which may not be
+# what the user expects, so we remove it
+RE_NON_WORD = re.compile(r'[!:"(|)]', re.UNICODE)
 
 def escape_query(text):
     text = force_text(text)
     text = RE_SPACE.sub(" ", text)  # Standardize spacing.
-    text = RE_NON_WORD.sub("", text)  # Remove non-word characters.
+    text = RE_NON_WORD.sub("&", text)  # Replace harmful characters with logical "AND"
+    # text may not start or end with "&"
+    text = text.strip('&')
     return text
-
 
 class SearchBackend(six.with_metaclass(abc.ABCMeta)):
 
