@@ -30,6 +30,9 @@ RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
 RE_NON_WORD = re.compile(r'[!:"(|)]', re.UNICODE)
 
 def escape_query(text):
+    """normalizes the query text to a format that can be consumed
+    by the backend database
+    """
     text = force_text(text)
     text = RE_SPACE.sub(" ", text)  # Standardize spacing.
     text = RE_NON_WORD.sub("&", text)  # Replace harmful characters with logical "AND"

@@ -51,33 +51,33 @@ class EscapingTest(TestCase):
     def testEscaping(self):
         # Test query escaping.
         self.assertEqual(escape_query(""), "")
-        self.assertEqual(escape_query("abc"), "abc")
-        self.assertEqual(escape_query("abc def"), "abc def")
-        self.assertEqual(escape_query("abc      def"), "abc def")
-        self.assertEqual(escape_query("abc'def"), "abc'def")
-        self.assertEqual(escape_query("'abc&def"), "'abc&def")
-        self.assertEqual(escape_query("abc@def"), "abc@def")
-        self.assertEqual(escape_query("abc#def"), "abc#def")
-        self.assertEqual(escape_query("abc$def"), "abc$def")
-        self.assertEqual(escape_query("abc^def"), "abc^def")
-        self.assertEqual(escape_query("abc&def"), "abc&def")
-        self.assertEqual(escape_query("abc*def"), "abc*def")
-        self.assertEqual(escape_query("abc=def"), "abc=def")
-        self.assertEqual(escape_query("abc+def"), "abc+def")
-        self.assertEqual(escape_query("abc-def"), "abc-def")
-        self.assertEqual(escape_query("abc_def"), "abc_def")
-        self.assertEqual(escape_query("abc.def"), "abc.def")
-        self.assertEqual(escape_query("abc,def"), "abc,def")
+        self.assertEqual(escape_query("abcd"), "abcd")
+        self.assertEqual(escape_query("abcd efgh"), "abcd efgh")
+        self.assertEqual(escape_query("abcd      efgh"), "abcd efgh")
+        self.assertEqual(escape_query("abcd'efgh"), "abcd'efgh")
+        self.assertEqual(escape_query("'abcd&efgh"), "'abcd&efgh")
+        self.assertEqual(escape_query("abcd@efgh"), "abcd@efgh")
+        self.assertEqual(escape_query("abcd#efgh"), "abcd#efgh")
+        self.assertEqual(escape_query("abcd$efgh"), "abcd$efgh")
+        self.assertEqual(escape_query("abcd^efgh"), "abcd^efgh")
+        self.assertEqual(escape_query("abcd&efgh"), "abcd&efgh")
+        self.assertEqual(escape_query("abcd*efgh"), "abcd*efgh")
+        self.assertEqual(escape_query("abcd=efgh"), "abcd=efgh")
+        self.assertEqual(escape_query("abcd+efgh"), "abcd+efgh")
+        self.assertEqual(escape_query("abcd-efgh"), "abcd-efgh")
+        self.assertEqual(escape_query("abcd_efgh"), "abcd_efgh")
+        self.assertEqual(escape_query("abcd.efgh"), "abcd.efgh")
+        self.assertEqual(escape_query("abcd,efgh"), "abcd,efgh")
         # now the ones where we replace harmful characters
-        self.assertEqual(escape_query("&abc"), "abc")
-        self.assertEqual(escape_query("&&&abc"), "abc")
-        self.assertEqual(escape_query("abc&"), "abc")
-        self.assertEqual(escape_query("abc&&&"), "abc")
-        self.assertEqual(escape_query("abc|def"), "abc&def")
-        self.assertEqual(escape_query("abc!def"), "abc&def")
-        self.assertEqual(escape_query("abc:def"), "abc&def")
-        self.assertEqual(escape_query("abc(def"), "abc&def")
-        self.assertEqual(escape_query("abc)def"), "abc&def")
+        self.assertEqual(escape_query("&abcd"), "abcd")
+        self.assertEqual(escape_query("&&&abcd"), "abcd")
+        self.assertEqual(escape_query("abcd&"), "abcd")
+        self.assertEqual(escape_query("abcd&&&"), "abcd")
+        self.assertEqual(escape_query("abcd|efgh"), "abcd&efgh")
+        self.assertEqual(escape_query("abcd!efgh"), "abcd&efgh")
+        self.assertEqual(escape_query("abcd:efgh"), "abcd&efgh")
+        self.assertEqual(escape_query("abcd(efgh"), "abcd&efgh")
+        self.assertEqual(escape_query("abcd)efgh"), "abcd&efgh")
 
 complex_registration_search_engine = watson.SearchEngine("restricted")
 
@@ -355,73 +355,73 @@ class SearchTest(SearchTestBase):
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc+def",
+            description = "description abcd+efgh",
         )
-        self.assertEqual(watson.search("abc+def").count(), 1)
+        self.assertEqual(watson.search("abcd+efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc&def",
+            description = "description abcd&efgh",
         )
-        self.assertEqual(watson.search("abc&def").count(), 1)
+        self.assertEqual(watson.search("abcd&efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc|def",
+            description = "description abcd|efgh",
         )
-        self.assertEqual(watson.search("abc|def").count(), 1)
+        self.assertEqual(watson.search("abcd|efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc:def",
+            description = "description abcd:efgh",
         )
-        self.assertEqual(watson.search("abc:def").count(), 1)
+        self.assertEqual(watson.search("abcd:efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc.def",
+            description = "description abcd.efgh",
         )
-        self.assertEqual(watson.search("abc.def").count(), 1)
+        self.assertEqual(watson.search("abcd.efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc,def",
+            description = "description abcd,efgh",
         )
-        self.assertEqual(watson.search("abc,def").count(), 1)
+        self.assertEqual(watson.search("abcd,efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc:def",
+            description = "description abcd:efgh",
         )
-        self.assertEqual(watson.search("abc:def").count(), 1)
+        self.assertEqual(watson.search("abcd:efgh").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc()",
+            description = "description abcd()",
         )
-        self.assertEqual(watson.search("abc()").count(), 1)
+        self.assertEqual(watson.search("abcd()").count(), 1)
         x.delete()
 
         x = WatsonTestModel1.objects.create(
             title = "title model1 instance12",
             content = "content model1 instance13 d'Argent",
-            description = "description abc(def",
+            description = "description abcd(efgh",
         )
-        self.assertEqual(watson.search("abc(def").count(), 1)
+        self.assertEqual(watson.search("abcd(efgh").count(), 1)
         x.delete()
 
 
