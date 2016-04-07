@@ -12,9 +12,6 @@ register = template.Library()
 @register.simple_tag(takes_context=True)
 def search_results(context, search_results):
     """Renders a list of search results."""
-    # Prefetch related for speed, if available.
-    if hasattr(search_results, "prefetch_related"):
-        search_results = search_results.prefetch_related("object")
     # Render the template.
     context.push()
     try:
