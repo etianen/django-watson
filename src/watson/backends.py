@@ -2,7 +2,8 @@
 
 from __future__ import unicode_literals
 
-import re, abc
+import abc
+import re
 
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, transaction
@@ -16,29 +17,27 @@ from watson.models import SearchEntry, has_int_pk
 def regex_from_word(word):
     """Generates a regext from the given search word."""
     return "(\s{word})|(^{word})".format(
-        word = re.escape(word),
+        word=re.escape(word),
     )
 
 
 RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
 
-# (below was researched and tested on PostgreSQL 9.5)
-# the only chars that to_tsquery does not really like are "! & : ( ) |"
-# "&" does not harm us as it converts to AND which we do anyway
-# "|" is syntactically correct, but performs OR lookup which may not be
-# what the user expects, so we remove it
-RE_NON_WORD = re.compile(r'[!:"(|)]', re.UNICODE)
+# PostgreSQL to_tsquery operators: ! & : ( ) |
+# MySQL boolean full-text search operators: > < ( ) " ~ * + -
+RE_NON_WORD = re.compile(r'[:"(|)!><~*+-]', re.UNICODE)
+
 
 def escape_query(text):
-    """normalizes the query text to a format that can be consumed
+    """
+    normalizes the query text to a format that can be consumed
     by the backend database
     """
     text = force_text(text)
     text = RE_SPACE.sub(" ", text)  # Standardize spacing.
-    text = RE_NON_WORD.sub("&", text)  # Replace harmful characters with logical "AND"
-    # text may not start or end with "&"
-    text = text.strip('&')
+    text = RE_NON_WORD.sub(" ", text)  # Replace harmful characters with space.
     return text
+
 
 class SearchBackend(six.with_metaclass(abc.ABCMeta)):
 
