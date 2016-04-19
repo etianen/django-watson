@@ -54,9 +54,10 @@ class EscapingTest(TestCase):
         self.assertEqual(escape_query("abcd"), "abcd")
         self.assertEqual(escape_query("abcd efgh"), "abcd efgh")
         self.assertEqual(escape_query("abcd      efgh"), "abcd efgh")
+        self.assertEqual(escape_query("&&abcd&"), "abcd")
 
         # check if we leave good characters
-        good_chars = "'$@#$^&=_.,"
+        good_chars = "'$@#$^=_.,"
         for char in good_chars:
             self.assertEqual(
                 escape_query("abcd{}efgh".format(char)),
@@ -64,7 +65,7 @@ class EscapingTest(TestCase):
             )
 
         # now the ones where we replace harmful characters
-        bad_chars = ':"(|)!><~*+-'
+        bad_chars = '&:"(|)!><~*+-'
         for char in bad_chars:
             self.assertEqual(
                 escape_query("abcd{}efgh".format(char)), "abcd efgh"
@@ -312,6 +313,8 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("café").count(), 1)
 
     def testSearchWithSpecialChars(self):
+        WatsonTestModel1.objects.all().delete()
+
         x = WatsonTestModel1.objects.create(
             title="title model1 instance12",
             content="content model1 instance13 d'Argent",
