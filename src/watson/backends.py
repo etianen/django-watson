@@ -274,8 +274,11 @@ class PostgresSearchBackend(SearchBackend):
         pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
+            ref_name_typecast = ""
         else:
             ref_name = "object_id"
+            # Cast to text to make join work with uuid columns
+            ref_name_typecast = "::text"
         return queryset.extra(
             tables = ("watson_searchentry",),
             where = (
@@ -283,10 +286,11 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
                     search_config = self.search_config
                 ),
-                "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
+                "watson_searchentry.{ref_name} = {table_name}.{pk_name}{ref_name_typecast}".format(
                     ref_name = ref_name,
                     table_name = connection.ops.quote_name(model._meta.db_table),
                     pk_name = connection.ops.quote_name(pk.db_column or pk.attname),
+                    ref_name_typecast = ref_name_typecast
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
