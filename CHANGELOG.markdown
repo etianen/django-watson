@@ -1,5 +1,11 @@
 # django-watson changelog
 
+## 1.2.2 - 04/06/2015
+
+- Fixing `filter()` to work with text-based primary keys in postgres (Jeppe Vesterbæk).
+- Improvements to query escaping (@amureki).
+- Disabling prefetch-related optimization in built-in views to avoid buggy Django behavior (@etianen).
+
 
 ## 1.2.1 - 07/03/2015
 
