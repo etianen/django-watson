@@ -10,7 +10,7 @@ Features
 --------
 
 * Search across multiple models.
-* Order results by by relevance.
+* Order results by relevance.
 * No need to install additional third-party modules or services.
 * Fast and scaleable enough for most use cases.
 
