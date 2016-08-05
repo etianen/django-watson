@@ -17,6 +17,9 @@ env:
   - DJANGO=django==1.9.5
   - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
   - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.10
+  - DJANGO=django==1.10 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   exclude:
     - python: 3.5
