@@ -11,12 +11,12 @@ env:
   - DJANGO=django==1.7.11
   - DJANGO=django==1.7.11 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
   - DJANGO=django==1.7.11 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.8.12
-  - DJANGO=django==1.8.12 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.12 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.9.5
-  - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.9.5 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.8.14
+  - DJANGO=django==1.8.14 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.8.14 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
+  - DJANGO=django==1.9.9
+  - DJANGO=django==1.9.9 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
+  - DJANGO=django==1.9.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
   - DJANGO=django==1.10
   - DJANGO=django==1.10 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
   - DJANGO=django==1.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
