@@ -16,6 +16,7 @@ except:
     from django.utils.unittest import skipUnless
 
 from django.test import TestCase
+from django.test.utils import override_settings
 from django.core.management import call_command
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -559,10 +560,9 @@ class ComplexRegistrationTest(SearchTestBase):
         self.assertEqual(complex_registration_search_engine.filter(WatsonTestModel2, "DESCRIPTION").count(), 0)
 
 
+@override_settings(ROOT_URLCONF="test_watson.urls")
 class AdminIntegrationTest(SearchTestBase):
-
-    urls = "test_watson.urls"
-
+    
     def setUp(self):
         super(AdminIntegrationTest, self).setUp()
         self.user = User(
@@ -600,9 +600,8 @@ class AdminIntegrationTest(SearchTestBase):
         del self.user
 
 
+@override_settings(ROOT_URLCONF="test_watson.urls")
 class SiteSearchTest(SearchTestBase):
-
-    urls = "test_watson.urls"
 
     def testSiteSearch(self):
         # Test a search than should find everything.
