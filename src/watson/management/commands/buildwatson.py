@@ -70,9 +70,9 @@ class Command(BaseCommand):
         """Runs the management command."""
         activate(settings.LANGUAGE_CODE)
         verbosity = int(options.get("verbosity", 1))
-
+        
         # see if we're asked to use a specific search engine
-        if options['engine']:
+        if options.get('engine'):
             engine_slug = options['engine']
             engine_selected = True
         else:
