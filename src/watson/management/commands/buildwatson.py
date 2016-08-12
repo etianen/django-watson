@@ -82,7 +82,7 @@ class Command(BaseCommand):
         # get the search engine we'll be checking registered models for, may be "default"
         search_engine = get_engine(engine_slug)
         models = []
-        for model_name in options['apps']:
+        for model_name in options.get('apps', []):
             try:
                 model = apps.get_model(*model_name.split("."))  # app label, model name
             except TypeError:  # were we given only model name without app_name?
