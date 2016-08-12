@@ -58,11 +58,13 @@ class Command(BaseCommand):
     args = "[[--engine=search_engine] <app.model|model> <app.model|model> ... ]"
     help = "Rebuilds the database indices needed by django-watson. You can (re-)build index for selected models by specifying them"
 
-    option_list = BaseCommand.option_list + (
-        make_option("--engine",
-            help="Search engine models are registered with"),
+    def add_arguments(self, parser):
+        parser.add_argument("apps", nargs="*", action="store", default=[])
+        parser.add_argument('--engine',
+            action="store",
+            help='Search engine models are registered with'
         )
-
+    
     @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
@@ -76,12 +78,11 @@ class Command(BaseCommand):
         else:
             engine_slug = "default"
             engine_selected = False
-
+        
         # get the search engine we'll be checking registered models for, may be "default"
         search_engine = get_engine(engine_slug)
-
         models = []
-        for model_name in args:
+        for model_name in options['apps']:
             try:
                 model = apps.get_model(*model_name.split("."))  # app label, model name
             except TypeError:  # were we given only model name without app_name?
