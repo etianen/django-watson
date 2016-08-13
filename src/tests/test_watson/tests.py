@@ -16,7 +16,6 @@ except:
     from django.utils.unittest import skipUnless
 
 from django.test import TestCase
-from django.test.utils import override_settings
 from django.core.management import call_command
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -29,18 +28,6 @@ from watson.backends import escape_query
 
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
 from test_watson import admin  # Force early registration of all admin models.
-
-# test settings to override
-SETTINGS_OVERRIDE = {
-    'TEMPLATES': [
-        {
-            'BACKEND': 'django.template.backends.django.DjangoTemplates',
-            'DIRS': ['templates'],
-            'APP_DIRS': True,
-        },
-    ], 
-    'ROOT_URLCONF': 'test_watson.urls',
-}
 
 class RegistrationTest(TestCase):
 
@@ -571,7 +558,6 @@ class ComplexRegistrationTest(SearchTestBase):
         self.assertEqual(complex_registration_search_engine.filter(WatsonTestModel2, "DESCRIPTION").count(), 0)
 
 
-@override_settings(**SETTINGS_OVERRIDE)
 class AdminIntegrationTest(SearchTestBase):
     
     def setUp(self):
@@ -611,7 +597,6 @@ class AdminIntegrationTest(SearchTestBase):
         del self.user
 
 
-@override_settings(**SETTINGS_OVERRIDE)
 class SiteSearchTest(SearchTestBase):
     def testSiteSearch(self):
         # Test a search than should find everything.

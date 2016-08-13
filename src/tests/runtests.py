@@ -72,7 +72,7 @@ def main():
         DATABASES={
             "default": database_setting
         },
-        ROOT_URLCONF="urls",
+        ROOT_URLCONF='test_watson.urls',
         INSTALLED_APPS=(
             "django.contrib.auth",
             "django.contrib.contenttypes",
@@ -93,6 +93,12 @@ def main():
         USE_TZ=True,
         STATIC_URL="/static/",
         TEST_RUNNER="django.test.runner.DiscoverRunner",
+        TEMPLATES=[{
+            'BACKEND': 'django.template.backends.django.DjangoTemplates',
+            'DIRS': ['templates'],
+            'APP_DIRS': True,
+        }], 
+        
     )
     # Run Django setup (1.7+).
     import django
