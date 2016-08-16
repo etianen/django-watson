@@ -79,10 +79,16 @@ class Command(BaseCommand):
             engine_slug = "default"
             engine_selected = False
         
+        # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
+        # args are collected in options['apps'], but in earlier versions they are
+        # kept in args.
+        if len(options['apps']): 
+            args = options['apps']
+        
         # get the search engine we'll be checking registered models for, may be "default"
         search_engine = get_engine(engine_slug)
         models = []
-        for model_name in options.get('apps', []):
+        for model_name in args:
             try:
                 model = apps.get_model(*model_name.split("."))  # app label, model name
             except TypeError:  # were we given only model name without app_name?
