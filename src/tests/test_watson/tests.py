@@ -29,7 +29,6 @@ from watson.backends import escape_query
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
 from test_watson import admin  # Force early registration of all admin models.
 
-
 class RegistrationTest(TestCase):
 
     def testRegistration(self):
@@ -560,9 +559,7 @@ class ComplexRegistrationTest(SearchTestBase):
 
 
 class AdminIntegrationTest(SearchTestBase):
-
-    urls = "test_watson.urls"
-
+    
     def setUp(self):
         super(AdminIntegrationTest, self).setUp()
         self.user = User(
@@ -601,9 +598,6 @@ class AdminIntegrationTest(SearchTestBase):
 
 
 class SiteSearchTest(SearchTestBase):
-
-    urls = "test_watson.urls"
-
     def testSiteSearch(self):
         # Test a search than should find everything.
         response = self.client.get("/simple/?q=title")

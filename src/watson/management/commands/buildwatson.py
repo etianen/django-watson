@@ -58,28 +58,35 @@ class Command(BaseCommand):
     args = "[[--engine=search_engine] <app.model|model> <app.model|model> ... ]"
     help = "Rebuilds the database indices needed by django-watson. You can (re-)build index for selected models by specifying them"
 
-    option_list = BaseCommand.option_list + (
-        make_option("--engine",
-            help="Search engine models are registered with"),
+    def add_arguments(self, parser):
+        parser.add_argument("apps", nargs="*", action="store", default=[])
+        parser.add_argument('--engine',
+            action="store",
+            help='Search engine models are registered with'
         )
-
+    
     @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
         activate(settings.LANGUAGE_CODE)
         verbosity = int(options.get("verbosity", 1))
-
+        
         # see if we're asked to use a specific search engine
-        if options['engine']:
+        if options.get('engine'):
             engine_slug = options['engine']
             engine_selected = True
         else:
             engine_slug = "default"
             engine_selected = False
-
+        
+        # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
+        # args are collected in options['apps'], but in earlier versions they are
+        # kept in args.
+        if len(options['apps']): 
+            args = options['apps']
+        
         # get the search engine we'll be checking registered models for, may be "default"
         search_engine = get_engine(engine_slug)
-
         models = []
         for model_name in args:
             try:

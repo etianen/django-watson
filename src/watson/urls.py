@@ -2,7 +2,7 @@
 
 from __future__ import unicode_literals
 
-from django.conf.urls import url, patterns
+from django.conf.urls import url
 
 from watson.views import search, search_json
 
