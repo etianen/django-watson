@@ -1,5 +1,11 @@
 # django-watson changelog
 
+## 1.2.3 - 23/08/2015
+
+- Django 1.10 compatibility (@SimonGreenhill).
+- Minor tweaks and bugfixes (@johnfraney).
+
+
 ## 1.2.2 - 04/06/2015
 
 - Fixing `filter()` to work with text-based primary keys in postgres (Jeppe Vesterbæk).
