@@ -10,6 +10,8 @@ these tests have been amended to 'fooo' and 'baar'. Ho hum.
 from __future__ import unicode_literals
 
 import json
+import re
+
 try:
     from unittest import skipUnless
 except:
@@ -29,8 +31,8 @@ from watson.backends import escape_query
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
 from test_watson import admin  # Force early registration of all admin models.
 
-class RegistrationTest(TestCase):
 
+class RegistrationTest(TestCase):
     def testRegistration(self):
         # Register the model and test.
         watson.register(WatsonTestModel1)
@@ -49,17 +51,18 @@ class RegistrationTest(TestCase):
 class EscapingTest(TestCase):
     def testEscaping(self):
         # Test query escaping.
-        self.assertEqual(escape_query(""), "")
-        self.assertEqual(escape_query("abcd"), "abcd")
-        self.assertEqual(escape_query("abcd efgh"), "abcd efgh")
-        self.assertEqual(escape_query("abcd      efgh"), "abcd efgh")
-        self.assertEqual(escape_query("&&abcd&"), "abcd")
+        chars_to_escape = re.compile(r'[&:"(|)!><~*+-]', re.UNICODE)
+        self.assertEqual(escape_query("", chars_to_escape), "")
+        self.assertEqual(escape_query("abcd", chars_to_escape), "abcd")
+        self.assertEqual(escape_query("abcd efgh", chars_to_escape), "abcd efgh")
+        self.assertEqual(escape_query("abcd      efgh", chars_to_escape), "abcd efgh")
+        self.assertEqual(escape_query("&&abcd&", chars_to_escape), "abcd")
 
         # check if we leave good characters
         good_chars = "'$@#$^=_.,"
         for char in good_chars:
             self.assertEqual(
-                escape_query("abcd{}efgh".format(char)),
+                escape_query("abcd{}efgh".format(char), chars_to_escape),
                 "abcd{}efgh".format(char)
             )
 
@@ -67,7 +70,7 @@ class EscapingTest(TestCase):
         bad_chars = '&:"(|)!><~*+-'
         for char in bad_chars:
             self.assertEqual(
-                escape_query("abcd{}efgh".format(char)), "abcd efgh"
+                escape_query("abcd{}efgh".format(char), chars_to_escape), "abcd efgh"
             )
 
 

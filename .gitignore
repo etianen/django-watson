@@ -12,3 +12,4 @@ Thumbs.db
 /dist
 *.sqlite3
 *.egg-info
+build
