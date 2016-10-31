@@ -21,17 +21,22 @@ def regex_from_word(word):
     )
 
 
+# PostgreSQL to_tsquery operators: ! & : ( ) |
+RE_POSTGRES_ESCAPE_CHARS = re.compile(r'[&:(|)!]', re.UNICODE)
+# MySQL boolean full-text search operators: > < ( ) " ~ * + -
+RE_MYSQL_ESCAPE_CHARS = re.compile(r'["()><~*+-]', re.UNICODE)
+
 RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
 
 
-def escape_query(text, chars_to_escape):
+def escape_query(text, re_escape_chars):
     """
     normalizes the query text to a format that can be consumed
     by the backend database
     """
     text = force_text(text)
     text = RE_SPACE.sub(" ", text)  # Standardize spacing.
-    text = chars_to_escape.sub(" ", text)  # Replace harmful characters with space.
+    text = re_escape_chars.sub(" ", text)  # Replace harmful characters with space.
     text = text.strip()
     return text
 
@@ -169,13 +174,10 @@ class PostgresSearchBackend(SearchBackend):
 
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-        # PostgreSQL to_tsquery operators: ! & : ( ) |
-        chars_to_escape = re.compile(r'[&:(|)!]', re.UNICODE)
-
         return " & ".join(
             "$${0}$$:*".format(word)
             for word
-            in escape_query(text, chars_to_escape).split()
+            in escape_query(text, RE_POSTGRES_ESCAPE_CHARS).split()
         )
 
     def is_installed(self):
@@ -320,14 +322,10 @@ class PostgresLegacySearchBackend(PostgresSearchBackend):
 
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
-
-        # PostgreSQL to_tsquery operators: ! & : ( ) |
-        chars_to_escape = re.compile(r'[&:(|)!]', re.UNICODE)
-
         return " & ".join(
             "$${0}$$".format(word)
             for word
-            in escape_query(text, chars_to_escape).split()
+            in escape_query(text, RE_POSTGRES_ESCAPE_CHARS).split()
         )
 
 
@@ -343,14 +341,11 @@ class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBa
 
 
 def escape_mysql_boolean_query(search_text):
-    # MySQL boolean full-text search operators: > < ( ) " ~ * + -
-    chars_to_escape = re.compile(r'["()><~*+-]', re.UNICODE)
-
     return " ".join(
         '+{word}*'.format(
             word=word,
         )
-        for word in escape_query(search_text, chars_to_escape).split()
+        for word in escape_query(search_text, RE_MYSQL_ESCAPE_CHARS).split()
     )
 
 

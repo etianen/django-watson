@@ -51,18 +51,18 @@ class RegistrationTest(TestCase):
 class EscapingTest(TestCase):
     def testEscaping(self):
         # Test query escaping.
-        chars_to_escape = re.compile(r'[&:"(|)!><~*+-]', re.UNICODE)
-        self.assertEqual(escape_query("", chars_to_escape), "")
-        self.assertEqual(escape_query("abcd", chars_to_escape), "abcd")
-        self.assertEqual(escape_query("abcd efgh", chars_to_escape), "abcd efgh")
-        self.assertEqual(escape_query("abcd      efgh", chars_to_escape), "abcd efgh")
-        self.assertEqual(escape_query("&&abcd&", chars_to_escape), "abcd")
+        re_escape_chars = re.compile(r'[&:"(|)!><~*+-]', re.UNICODE)
+        self.assertEqual(escape_query("", re_escape_chars), "")
+        self.assertEqual(escape_query("abcd", re_escape_chars), "abcd")
+        self.assertEqual(escape_query("abcd efgh", re_escape_chars), "abcd efgh")
+        self.assertEqual(escape_query("abcd      efgh", re_escape_chars), "abcd efgh")
+        self.assertEqual(escape_query("&&abcd&", re_escape_chars), "abcd")
 
         # check if we leave good characters
         good_chars = "'$@#$^=_.,"
         for char in good_chars:
             self.assertEqual(
-                escape_query("abcd{}efgh".format(char), chars_to_escape),
+                escape_query("abcd{}efgh".format(char), re_escape_chars),
                 "abcd{}efgh".format(char)
             )
 
@@ -70,7 +70,7 @@ class EscapingTest(TestCase):
         bad_chars = '&:"(|)!><~*+-'
         for char in bad_chars:
             self.assertEqual(
-                escape_query("abcd{}efgh".format(char), chars_to_escape), "abcd efgh"
+                escape_query("abcd{}efgh".format(char), re_escape_chars), "abcd efgh"
             )
 
 
