@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.2.4 - 07/11/2015
+
+- Improved escaping of queries on different backends (@amureki).
+
+
 ## 1.2.3 - 23/08/2015
 
 - Django 1.10 compatibility (@SimonGreenhill).
