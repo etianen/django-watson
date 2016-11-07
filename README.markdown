@@ -3,7 +3,7 @@ django-watson
 
 **django-watson** is a fast multi-model full-text search plugin for Django.
 
-It is easy to install and use, and provides high quality search results. 
+It is easy to install and use, and provides high quality search results.
 
 
 Features
@@ -13,6 +13,7 @@ Features
 * Order results by relevance.
 * No need to install additional third-party modules or services.
 * Fast and scaleable enough for most use cases.
+* Supports Django 1.8+, Python 2.7+.
 
 
 Documentation
@@ -35,7 +36,21 @@ You can keep up to date with the latest announcements by joining the
 [django-watson discussion group]: http://groups.google.com/group/django-watson
     "django-watson Google Group"
 
-    
+
+Contributing
+------------
+Bug reports, bug fixes, and new features are always welcome. Please raise issues on the
+[django-watson github repository](https://github.com/etianen/django-watson/issues), and submit
+pull requests for any new code.
+
+You can run the test suite yourself from within a virtual environment with the following
+commands.
+
+```
+    pip install tox
+    tox
+```
+
 More information
 ----------------
 
