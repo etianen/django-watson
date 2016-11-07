@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals, print_function
 
-from optparse import make_option
-
 from django.core.management.base import BaseCommand, CommandError
 from django.apps import apps
 from django.contrib import admin
@@ -21,56 +19,68 @@ from watson.models import SearchEntry
 # Sets up registration for django-watson's admin integration.
 admin.autodiscover()
 
+
 def get_engine(engine_slug_):
-    '''returns search engine with a given name'''
+    """returns search engine with a given name"""
     try:
         return [x[1] for x in SearchEngine.get_created_engines() if x[0] == engine_slug_][0]
     except IndexError:
         raise CommandError("Search Engine \"%s\" is not registered!" % force_text(engine_slug_))
 
+
 def rebuild_index_for_model(model_, engine_slug_, verbosity_):
-    '''rebuilds index for a model'''
+    """rebuilds index for a model"""
 
     search_engine_ = get_engine(engine_slug_)
 
     local_refreshed_model_count = [0]  # HACK: Allows assignment to outer scope.
+
     def iter_search_entries():
         for obj in model_._default_manager.all().iterator():
             for search_entry in search_engine_._update_obj_index_iter(obj):
                 yield search_entry
             local_refreshed_model_count[0] += 1
             if verbosity_ >= 3:
-                print("Refreshed search entry for {model} {obj} in {engine_slug!r} search engine.".format(
-                    model = force_text(model_._meta.verbose_name),
-                    obj = force_text(obj),
-                    engine_slug = force_text(engine_slug_),
-                ))
+                print(
+                    "Refreshed search entry for {model} {obj} "
+                    "in {engine_slug!r} search engine.".format(
+                        model=force_text(model_._meta.verbose_name),
+                        obj=force_text(obj),
+                        engine_slug=force_text(engine_slug_),
+                    )
+                )
         if verbosity_ == 2:
-            print("Refreshed {local_refreshed_model_count} {model} search entry(s) in {engine_slug!r} search engine.".format(
-                model = force_text(model_._meta.verbose_name),
-                local_refreshed_model_count = local_refreshed_model_count[0],
-                engine_slug = force_text(engine_slug_),
-            ))
+            print(
+                "Refreshed {local_refreshed_model_count} {model} search entry(s) "
+                "in {engine_slug!r} search engine.".format(
+                    model=force_text(model_._meta.verbose_name),
+                    local_refreshed_model_count=local_refreshed_model_count[0],
+                    engine_slug=force_text(engine_slug_),
+                )
+            )
     _bulk_save_search_entries(iter_search_entries())
     return local_refreshed_model_count[0]
 
+
 class Command(BaseCommand):
     args = "[[--engine=search_engine] <app.model|model> <app.model|model> ... ]"
-    help = "Rebuilds the database indices needed by django-watson. You can (re-)build index for selected models by specifying them"
+    help = "Rebuilds the database indices needed by django-watson. " \
+           "You can (re-)build index for selected models by specifying them"
 
     def add_arguments(self, parser):
         parser.add_argument("apps", nargs="*", action="store", default=[])
-        parser.add_argument('--engine',
+        parser.add_argument(
+            '--engine',
             action="store",
             help='Search engine models are registered with'
         )
-    
+
     @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
         activate(settings.LANGUAGE_CODE)
         verbosity = int(options.get("verbosity", 1))
-        
+
         # see if we're asked to use a specific search engine
         if options.get('engine'):
             engine_slug = options['engine']
@@ -78,13 +88,13 @@ class Command(BaseCommand):
         else:
             engine_slug = "default"
             engine_selected = False
-        
+
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
         # kept in args.
-        if len(options['apps']): 
+        if len(options['apps']):
             args = options['apps']
-        
+
         # get the search engine we'll be checking registered models for, may be "default"
         search_engine = get_engine(engine_slug)
         models = []
@@ -101,7 +111,10 @@ class Command(BaseCommand):
                 else:
                     model = None
             if model is None or not search_engine.is_registered(model):
-                raise CommandError("Model \"%s\" is not registered with django-watson search engine \"%s\"!" % (force_text(model_name), force_text(engine_slug)))
+                raise CommandError(
+                    "Model \"%s\" is not registered with django-watson search engine \"%s\"!"
+                    % (force_text(model_name), force_text(engine_slug))
+                )
             models.append(model)
 
         refreshed_model_count = 0
@@ -128,24 +141,31 @@ class Command(BaseCommand):
                 for model in registered_models:
                     refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity)
 
-                # Clean out any search entries that exist for stale content types. Only do it during full rebuild
+                # Clean out any search entries that exist for stale content types.
+                # Only do it during full rebuild
                 valid_content_types = [ContentType.objects.get_for_model(model) for model in registered_models]
                 stale_entries = SearchEntry.objects.filter(
-                    engine_slug = engine_slug,
+                    engine_slug=engine_slug,
                 ).exclude(
-                    content_type__in = valid_content_types
+                    content_type__in=valid_content_types
                 )
                 stale_entry_count = stale_entries.count()
                 if stale_entry_count > 0:
                     stale_entries.delete()
                 if verbosity >= 1:
-                    print("Deleted {stale_entry_count} stale search entry(s) in {engine_slug!r} search engine.".format(
-                        stale_entry_count = stale_entry_count,
-                        engine_slug = force_text(engine_slug),
-                    ))
+                    print(
+                        "Deleted {stale_entry_count} stale search entry(s) "
+                        "in {engine_slug!r} search engine.".format(
+                            stale_entry_count=stale_entry_count,
+                            engine_slug=force_text(engine_slug),
+                        )
+                    )
 
         if verbosity == 1:
-            print("Refreshed {refreshed_model_count} search entry(s) in {engine_slug!r} search engine.".format(
-                refreshed_model_count = refreshed_model_count,
-                engine_slug = force_text(engine_slug),
-            ))
+            print(
+                "Refreshed {refreshed_model_count} search entry(s) "
+                "in {engine_slug!r} search engine.".format(
+                    refreshed_model_count=refreshed_model_count,
+                    engine_slug=force_text(engine_slug),
+                )
+            )

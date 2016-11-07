@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-import sys, os, os.path
+import os
+import sys
 from optparse import OptionParser
 
 AVAILABLE_DATABASES = {
@@ -97,9 +98,9 @@ def main():
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': ['templates'],
             'APP_DIRS': True,
-        }], 
-        
+        }],
     )
+
     # Run Django setup (1.7+).
     import django
     try:
@@ -110,9 +111,9 @@ def main():
     from django.test.utils import get_runner
     TestRunner = get_runner(settings)
     test_runner = TestRunner(
-        verbosity = int(options.verbosity),
-        interactive = options.interactive,
-        failfast = options.failfast,
+        verbosity=int(options.verbosity),
+        interactive=options.interactive,
+        failfast=options.failfast,
     )
     # Run the tests.
     failures = test_runner.run_tests(["test_watson"])

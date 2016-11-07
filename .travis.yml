@@ -7,14 +7,24 @@ cache:
     - $HOME/.cache/pip
 matrix:
   fast_finish: true
+env:
+  matrix:
+    - WORKER=python
+    - WORKER=flake8
 services:
   - postgresql
   - mysql
 install:
   - pip install tox
+  - pip install flake8
 before_script:
-  - mysql -e 'create database test_project'
-  - psql -c 'create database test_project;' -U postgres
-script: tox
+  - |
+    if [[ $WORKER == python ]]; then
+      mysql -e 'create database test_project';
+      psql -c 'create database test_project;' -U postgres;
+    fi
+script:
+  - if [[ $WORKER == python ]]; then tox; fi
+  - if [[ $WORKER == flake8 ]]; then flake8 --jobs=2 . ; fi
 notifications:
   email: false

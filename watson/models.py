@@ -2,8 +2,6 @@
 
 from __future__ import unicode_literals
 
-import json
-
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.functional import cached_property
@@ -12,6 +10,7 @@ try:
     from django.contrib.contenttypes.fields import GenericForeignKey
 except ImportError:
     from django.contrib.contenttypes.generic import GenericForeignKey
+
 
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
@@ -34,9 +33,9 @@ class SearchEntry(models.Model):
     """An entry in the search index."""
 
     engine_slug = models.CharField(
-        max_length = 200,
-        db_index = True,
-        default = "default",
+        max_length=200,
+        db_index=True,
+        default="default",
     )
 
     content_type = models.ForeignKey(
@@ -46,28 +45,28 @@ class SearchEntry(models.Model):
     object_id = models.TextField()
 
     object_id_int = models.IntegerField(
-        blank = True,
-        null = True,
-        db_index = True,
+        blank=True,
+        null=True,
+        db_index=True,
     )
 
     object = GenericForeignKey()
 
     title = models.CharField(
-        max_length = 1000,
+        max_length=1000,
     )
 
     description = models.TextField(
-        blank = True,
+        blank=True,
     )
 
     content = models.TextField(
-        blank = True,
+        blank=True,
     )
 
     url = models.CharField(
-        max_length = 1000,
-        blank = True,
+        max_length=1000,
+        blank=True,
     )
 
     meta_encoded = models.TextField()

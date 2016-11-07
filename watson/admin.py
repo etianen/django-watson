@@ -68,9 +68,9 @@ class SearchAdmin(admin.ModelAdmin):
         if not self.search_engine.is_registered(self.model) and self.search_fields:
             self.search_engine.register(
                 self.model,
-                fields = self.search_fields,
-                adapter_cls = self.search_adapter_cls,
-                get_live_queryset = lambda self_: None,  # Ensure complete queryset is used in admin.
+                fields=self.search_fields,
+                adapter_cls=self.search_adapter_cls,
+                get_live_queryset=lambda self_: None,  # Ensure complete queryset is used in admin.
             )
 
     def get_changelist(self, request, **kwargs):

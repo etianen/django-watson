@@ -5,7 +5,7 @@ from django.contrib import admin
 urlpatterns = [
 
     url("^simple/", include("watson.urls")),
-    
+
     url("^custom/", include("watson.urls"), kwargs={
         "query_param": "fooo",
         "empty_query_redirect": "/simple/",
@@ -15,6 +15,6 @@ urlpatterns = [
         },
         "paginate_by": 10,
     }),
-    
+
     url("^admin/", include(admin.site.urls)),
 ]
