@@ -1,37 +1,30 @@
 language: python
 sudo: false
 python:
-  - 2.7
-  - 3.4
   - 3.5
 cache:
   directories:
     - $HOME/.cache/pip
-env:
-  - DJANGO=django==1.8.14
-  - DJANGO=django==1.8.14 DB_ENGINE="django.db.backends.postgresql_psycopg2" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.8.14 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.9.9
-  - DJANGO=django==1.9.9 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.9.9 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
-  - DJANGO=django==1.10
-  - DJANGO=django==1.10 DB_ENGINE="django.db.backends.postgresql" DB_NAME="test_project" DB_USER="postgres"
-  - DJANGO=django==1.10 DB_ENGINE="django.db.backends.mysql" DB_NAME="test_project" DB_USER="travis"
 matrix:
   fast_finish: true
+env:
+  matrix:
+    - WORKER=python
+    - WORKER=flake8
 services:
   - postgresql
   - mysql
 install:
-  - travis_retry pip install $DJANGO
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then travis_retry pip install psycopg2; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then travis_retry pip install mysqlclient ; fi
-  - travis_retry pip install -e .
+  - pip install tox
+  - pip install flake8
 before_script:
-  - if [[ "$DB_ENGINE" == "django.db.backends.mysql" ]] ; then mysql -e 'create database test_project'; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-  - if [[ "$DB_ENGINE" == "django.db.backends.postgresql_psycopg2" ]] ; then psql -c 'create database test_project;' -U postgres; fi
-script: python src/tests/runtests.py
+  - |
+    if [[ $WORKER == python ]]; then
+      mysql -e 'create database test_project';
+      psql -c 'create database test_project;' -U postgres;
+    fi
+script:
+  - if [[ $WORKER == python ]]; then tox; fi
+  - if [[ $WORKER == flake8 ]]; then flake8 --jobs=2 . ; fi
 notifications:
   email: false

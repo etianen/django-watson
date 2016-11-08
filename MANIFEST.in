@@ -1,4 +1,4 @@
-include src/watson/templates/watson/*.html
-include src/watson/locale/*/LC_MESSAGES/django.*
+include watson/templates/watson/*.html
+include watson/locale/*/LC_MESSAGES/django.*
 include LICENSE
 include README.markdown

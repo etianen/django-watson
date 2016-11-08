@@ -118,7 +118,7 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
         """, """
             ({db_table}.{content_type_id} = %s)
         """]
-        word_kwargs= {
+        word_kwargs = {
             "db_table": db_table,
             "model_db_table": model_db_table,
             "engine_slug": connection.ops.quote_name("engine_slug"),
@@ -147,9 +147,13 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
         # Add in all words.
         for word in search_text.split():
             regex = regex_from_word(word)
-            word_query.append("""
-                ({db_table}.{title} {iregex_operator} OR {db_table}.{description} {iregex_operator} OR {db_table}.{content} {iregex_operator})
-            """)
+            word_query.append(
+                """
+                ({db_table}.{title} {iregex_operator}
+                OR {db_table}.{description} {iregex_operator}
+                OR {db_table}.{content} {iregex_operator})
+                """
+            )
             word_args.extend((regex, regex, regex))
         # Compile the query.
         full_word_query = " AND ".join(word_query).format(**word_kwargs)
@@ -354,25 +358,36 @@ class MySQLSearchBackend(SearchBackend):
     def is_installed(self):
         """Checks whether django-watson is installed."""
         cursor = connection.cursor()
-        cursor.execute("SHOW INDEX FROM watson_searchentry WHERE Key_name = 'watson_searchentry_fulltext'");
+        cursor.execute("SHOW INDEX FROM watson_searchentry WHERE Key_name = 'watson_searchentry_fulltext'")
         return bool(cursor.fetchall())
 
     def do_install(self):
         """Executes the MySQL specific SQL code to install django-watson."""
         cursor = connection.cursor()
         # Drop all foreign keys on the watson_searchentry table.
-        cursor.execute("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'watson_searchentry' AND CONSTRAINT_TYPE = 'FOREIGN KEY'")
+        cursor.execute(
+            "SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS "
+            "WHERE CONSTRAINT_SCHEMA = DATABASE() "
+            "AND TABLE_NAME = 'watson_searchentry' "
+            "AND CONSTRAINT_TYPE = 'FOREIGN KEY'"
+        )
         for constraint_name, in cursor.fetchall():
-            cursor.execute("ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
-                constraint_name=constraint_name,
-            ))
+            cursor.execute(
+                "ALTER TABLE watson_searchentry DROP FOREIGN KEY {constraint_name}".format(
+                    constraint_name=constraint_name,
+                )
+            )
         # Change the storage engine to MyISAM.
         cursor.execute("ALTER TABLE watson_searchentry ENGINE = MyISAM")
         # Add the full text indexes.
-        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext ON watson_searchentry (title, description, content)")
-        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title ON watson_searchentry (title)")
-        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_description ON watson_searchentry (description)")
-        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_content ON watson_searchentry (content)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_fulltext "
+                       "ON watson_searchentry (title, description, content)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_title "
+                       "ON watson_searchentry (title)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_description "
+                       "ON watson_searchentry (description)")
+        cursor.execute("CREATE FULLTEXT INDEX watson_searchentry_content "
+                       "ON watson_searchentry (content)")
 
     def do_uninstall(self):
         """Executes the SQL needed to uninstall django-watson."""
@@ -427,7 +442,8 @@ class MySQLSearchBackend(SearchBackend):
             tables=("watson_searchentry",),
             where=(
                 "watson_searchentry.engine_slug = %s",
-                "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)",
+                "MATCH (watson_searchentry.title, watson_searchentry.description, watson_searchentry.content) "
+                "AGAINST (%s IN BOOLEAN MODE)",
                 "watson_searchentry.{ref_name} = {table_name}.{pk_name}".format(
                     ref_name=ref_name,
                     table_name=connection.ops.quote_name(model._meta.db_table),
