@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import abc
 import re
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import connection, transaction
 from django.db.models import Q
@@ -173,7 +174,7 @@ class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
 
-    search_config = "pg_catalog.english"
+    search_config = getattr(settings, "WATSON_POSTGRES_SEARCH_CONFIG", "pg_catalog.english")
     """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
 
     def escape_postgres_query(self, text):
