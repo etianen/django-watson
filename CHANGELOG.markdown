@@ -1,24 +1,30 @@
 # django-watson changelog
 
-## 1.2.4 - 07/11/2015
+## 1.3.0 - 19/12/2016
+
+- Added `WATSON_POSTGRES_SEACH_CONFIG` setting (@devxplorer).
+- Modernised codebase (@amureki).
+
+
+## 1.2.4 - 07/11/2016
 
 - Improved escaping of queries on different backends (@amureki).
 
 
-## 1.2.3 - 23/08/2015
+## 1.2.3 - 23/08/2016
 
 - Django 1.10 compatibility (@SimonGreenhill).
 - Minor tweaks and bugfixes (@johnfraney).
 
 
-## 1.2.2 - 04/06/2015
+## 1.2.2 - 04/06/2016
 
 - Fixing `filter()` to work with text-based primary keys in postgres (Jeppe Vesterbæk).
 - Improvements to query escaping (@amureki).
 - Disabling prefetch-related optimization in built-in views to avoid buggy Django behavior (@etianen).
 
 
-## 1.2.1 - 07/03/2015
+## 1.2.1 - 07/03/2016
 
 - Fixing AppNotReady errors when registering django-watson (@etianen).
 - Minor tweaks and bugfixes (@SimonGreenhill, @etianen).
