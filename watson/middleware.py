@@ -3,6 +3,11 @@
 from __future__ import unicode_literals
 
 from django.core.exceptions import ImproperlyConfigured
+try:
+    from django.utils.deprecation import MiddlewareMixin
+    cls = MiddlewareMixin
+except:
+    cls = object
 
 from watson.search import search_context_manager
 
@@ -10,7 +15,7 @@ from watson.search import search_context_manager
 WATSON_MIDDLEWARE_FLAG = "watson.search_context_middleware_active"
 
 
-class SearchContextMiddleware(object):
+class SearchContextMiddleware(cls):
 
     """Wraps the entire request in a search context."""
 
