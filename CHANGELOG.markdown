@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.3.1 - 03/04/2016
+
+- Fixed `SearchContextMiddleware` for Django 1.10.0 (@blodone).
+
+
 ## 1.3.0 - 19/12/2016
 
 - Added `WATSON_POSTGRES_SEACH_CONFIG` setting (@devxplorer).
