@@ -7,7 +7,7 @@ import re
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db import connection, transaction
+from django.db import transaction, connections, router
 from django.db.models import Q
 from django.utils.encoding import force_text
 from django.utils import six
@@ -109,8 +109,11 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         model = queryset.model
+        connection = connections[router.db_for_read(SearchEntry)]
+        model_connection = connections[router.db_for_read(model)]
+
         db_table = connection.ops.quote_name(SearchEntry._meta.db_table)
-        model_db_table = connection.ops.quote_name(model._meta.db_table)
+        model_db_table = model_connection.ops.quote_name(model._meta.db_table)
         pk = model._meta.pk
         id = connection.ops.quote_name(pk.db_column or pk.attname)
         # Add in basic filters.
@@ -187,6 +190,8 @@ class PostgresSearchBackend(SearchBackend):
 
     def is_installed(self):
         """Checks whether django-watson is installed."""
+        connection = connections[router.db_for_read(SearchEntry)]
+
         cursor = connection.cursor()
         cursor.execute("""
             SELECT attname FROM pg_attribute
@@ -197,6 +202,8 @@ class PostgresSearchBackend(SearchBackend):
     @transaction.atomic()
     def do_install(self):
         """Executes the PostgreSQL specific SQL code to install django-watson."""
+        connection = connections[router.db_for_write(SearchEntry)]
+
         connection.cursor().execute("""
             -- Ensure that plpgsql is installed.
             CREATE OR REPLACE FUNCTION make_plpgsql() RETURNS VOID LANGUAGE SQL AS
@@ -237,6 +244,8 @@ class PostgresSearchBackend(SearchBackend):
     @transaction.atomic()
     def do_uninstall(self):
         """Executes the PostgreSQL specific SQL code to uninstall django-watson."""
+        connection = connections[router.db_for_write(SearchEntry)]
+
         connection.cursor().execute("""
             ALTER TABLE watson_searchentry DROP COLUMN search_tsv;
 
@@ -276,6 +285,8 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
+        connection = connections[router.db_for_read(SearchEntry)]
+
         pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
@@ -358,12 +369,15 @@ class MySQLSearchBackend(SearchBackend):
 
     def is_installed(self):
         """Checks whether django-watson is installed."""
+        connection = connections[router.db_for_read(SearchEntry)]
+
         cursor = connection.cursor()
         cursor.execute("SHOW INDEX FROM watson_searchentry WHERE Key_name = 'watson_searchentry_fulltext'")
         return bool(cursor.fetchall())
 
     def do_install(self):
         """Executes the MySQL specific SQL code to install django-watson."""
+        connection = connections[router.db_for_write(SearchEntry)]
         cursor = connection.cursor()
         # Drop all foreign keys on the watson_searchentry table.
         cursor.execute(
@@ -392,6 +406,7 @@ class MySQLSearchBackend(SearchBackend):
 
     def do_uninstall(self):
         """Executes the SQL needed to uninstall django-watson."""
+        connection = connections[router.db_for_write(SearchEntry)]
         cursor = connection.cursor()
         # Destroy the full text indexes.
         cursor.execute("DROP INDEX watson_searchentry_fulltext ON watson_searchentry")
@@ -434,6 +449,7 @@ class MySQLSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
+        connection = connections[router.db_for_read(SearchEntry)]
         pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
@@ -486,6 +502,7 @@ class AdaptiveSearchBackend(SearchBackend):
 
     def __new__(cls):
         """Guess the correct search backend and initialize it."""
+        connection = connections[router.db_for_read(SearchEntry)]
         if connection.vendor == "postgresql":
             version = get_postgresql_version(connection)
             if version > 80400:
