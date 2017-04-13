@@ -109,11 +109,10 @@ class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
     def do_filter(self, engine_slug, queryset, search_text):
         """Filters the given queryset according the the search logic for this backend."""
         model = queryset.model
-        connection = connections[router.db_for_read(SearchEntry)]
-        model_connection = connections[router.db_for_read(model)]
+        connection = connections[queryset.db]
 
         db_table = connection.ops.quote_name(SearchEntry._meta.db_table)
-        model_db_table = model_connection.ops.quote_name(model._meta.db_table)
+        model_db_table = connection.ops.quote_name(model._meta.db_table)
         pk = model._meta.pk
         id = connection.ops.quote_name(pk.db_column or pk.attname)
         # Add in basic filters.
@@ -285,7 +284,7 @@ class PostgresSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
-        connection = connections[router.db_for_read(SearchEntry)]
+        connection = connections[queryset.db]
 
         pk = model._meta.pk
         if has_int_pk(model):
@@ -449,7 +448,7 @@ class MySQLSearchBackend(SearchBackend):
         """Performs the full text filter."""
         model = queryset.model
         content_type = ContentType.objects.get_for_model(model)
-        connection = connections[router.db_for_read(SearchEntry)]
+        connection = connections[queryset.db]
         pk = model._meta.pk
         if has_int_pk(model):
             ref_name = "object_id_int"
