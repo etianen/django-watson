@@ -563,12 +563,12 @@ class SearchEngine(object):
                 else:
                     yield queryset.all()
 
-    def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
+    def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None, blank_search_results=False):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         from watson.models import SearchEntry
         # Check for blank search text.
         search_text = search_text.strip()
-        if not search_text:
+        if not search_text and not blank_search_results:
             return SearchEntry.objects.none()
         # Get the initial queryset.
         queryset = SearchEntry.objects.filter(
@@ -580,6 +580,9 @@ class SearchEngine(object):
         ).exclude(
             self._create_model_filter(exclude)
         )
+        # Return queryset for the blank search text
+        if not search_text and blank_search_results:
+            return queryset
         # Perform the backend-specific full text match.
         backend = get_backend(backend_name=backend_name)
         queryset = backend.do_search(self._engine_slug, queryset, search_text)
