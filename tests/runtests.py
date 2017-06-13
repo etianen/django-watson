@@ -97,6 +97,7 @@ def main():
         TEMPLATES=[{
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': ['templates'],
+            'OPTIONS': {'context_processors': ['django.contrib.auth.context_processors.auth']},
             'APP_DIRS': True,
         }],
     )
