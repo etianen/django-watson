@@ -19,7 +19,7 @@ def search_results(context, search_results):
             "search_results": search_results,
             "query": context["query"],
         })
-        return template.loader.render_to_string("watson/includes/search_results.html", context)
+        return template.loader.render_to_string("watson/includes/search_results.html", context.flatten())
     finally:
         context.pop()
 
@@ -45,6 +45,6 @@ def search_result_item(context, search_result):
             "watson/includes/search_result_{app_label}_{model_name}.html".format(**params),
             "watson/includes/search_result_{app_label}.html".format(**params),
             "watson/includes/search_result_item.html",
-        ), context)
+        ), context.flatten())
     finally:
         context.pop()
