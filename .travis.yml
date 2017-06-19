@@ -1,7 +1,10 @@
 language: python
 sudo: false
 python:
+  - 2.7
+  - 3.4
   - 3.5
+  - 3.6
 cache:
   directories:
     - $HOME/.cache/pip
@@ -9,7 +12,7 @@ services:
   - postgresql
   - mysql
 install:
-  - pip install tox
+  - pip install tox-travis
 before_script:
   - mysql -e 'create database test_project';
   - psql -c 'create database test_project;' -U postgres;
