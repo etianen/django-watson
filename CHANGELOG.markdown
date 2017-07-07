@@ -1,5 +1,11 @@
 # django-watson changelog
 
+## 1.4.0 - 07/07/2017
+
+- Multiple database support (@sorokins).
+- Minor tweaks and bugfixes (@unaizalakain, @moggers87).
+
+
 ## 1.3.1 - 03/04/2016
 
 - Fixed `SearchContextMiddleware` for Django 1.10.0 (@blodone).

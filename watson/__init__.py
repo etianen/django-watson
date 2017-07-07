@@ -6,4 +6,4 @@ Developed by Dave Hall.
 <http://www.etianen.com/>
 """
 
-__version__ = VERSION = (1, 3, 1)
+__version__ = VERSION = (1, 4, 0)
