@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
                 ('content', models.TextField(blank=True)),
                 ('url', models.CharField(max_length=1000, blank=True)),
                 ('meta_encoded', models.TextField()),
-                ('content_type', models.ForeignKey(to='contenttypes.ContentType')),
+                ('content_type', models.ForeignKey(to='contenttypes.ContentType', on_delete=models.CASCADE)),
             ],
             options={
                 'verbose_name_plural': 'search entries',
