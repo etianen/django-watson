@@ -1,8 +1,8 @@
 # django-watson changelog
 
-## 1.3.1
+## 1.4.1 - 22/08/2017
 
-- Allowing joins to UUID columns in `search()`.
+- Allowing joins to UUID columns in `search()` (@etianen).
 
 
 ## 1.4.0 - 07/07/2017
