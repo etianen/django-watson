@@ -89,6 +89,10 @@ class SearchBackend(six.with_metaclass(abc.ABCMeta)):
         """Filters the given queryset according the the search logic for this backend."""
         raise NotImplementedError
 
+    def do_string_cast(self, connection, column_name):
+        """Casts the given column name to string."""
+        return connection.ops.quote_name(column_name)
+
 
 class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
 
@@ -322,6 +326,11 @@ class PostgresSearchBackend(SearchBackend):
             },
             select_params=(self.escape_postgres_query(search_text),),
             order_by=("-watson_rank",),
+        )
+
+    def do_string_cast(self, connection, column_name):
+        return "{column_name}::text".format(
+            column_name=connection.ops.quote_name(column_name),
         )
 
 

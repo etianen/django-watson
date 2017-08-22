@@ -12,8 +12,9 @@ from weakref import WeakValueDictionary
 from django.conf import settings
 from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
-from django.db import models
+from django.db import models, connections
 from django.db.models import Q
+from django.db.models.expressions import RawSQL
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_text
@@ -520,7 +521,7 @@ class SearchEngine(object):
 
     # Searching.
 
-    def _create_model_filter(self, models):
+    def _create_model_filter(self, models, backend):
         """Creates a filter for the given model/queryset list."""
         from django.contrib.contenttypes.models import ContentType
         from watson.models import has_int_pk
@@ -537,6 +538,12 @@ class SearchEngine(object):
                         object_id_int__in=queryset,
                     )
                 else:
+                    queryset = queryset.annotate(
+                        watson_pk_str=RawSQL(backend.do_string_cast(
+                            connections[queryset.db],
+                            model._meta.pk.db_column or model._meta.pk.attname,
+                        ), ()),
+                    ).values_list("watson_pk_str", flat=True)
                     filter &= Q(
                         object_id__in=queryset,
                     )
@@ -566,6 +573,7 @@ class SearchEngine(object):
     def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         from watson.models import SearchEntry
+        backend = get_backend(backend_name=backend_name)
         # Check for blank search text.
         search_text = search_text.strip()
         if not search_text:
@@ -576,12 +584,11 @@ class SearchEngine(object):
         )
         # Process the allowed models.
         queryset = queryset.filter(
-            self._create_model_filter(self._get_included_models(models))
+            self._create_model_filter(self._get_included_models(models), backend)
         ).exclude(
-            self._create_model_filter(exclude)
+            self._create_model_filter(exclude, backend)
         )
         # Perform the backend-specific full text match.
-        backend = get_backend(backend_name=backend_name)
         queryset = backend.do_search(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
