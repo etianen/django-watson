@@ -3,6 +3,7 @@
 ## 1.4.1 - 22/08/2017
 
 - Allowing joins to UUID columns in `search()` (@etianen).
+- Django 1.11 compatibility (@alorence).
 
 
 ## 1.4.0 - 07/07/2017
