@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.4.2 - 22/09/2017
+
+- Fixed caching of default search backend.
+
+
 ## 1.4.1 - 22/08/2017
 
 - Allowing joins to UUID columns in `search()` (@etianen).
