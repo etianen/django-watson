@@ -629,12 +629,12 @@ _backends_cache = {}
 def get_backend(backend_name=None):
     """Initializes and returns the search backend."""
     global _backends_cache
+    if not backend_name:
+        backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
     # Try to use the cached backend.
     if backend_name in _backends_cache:
         return _backends_cache[backend_name]
     # Load the backend class.
-    if not backend_name:
-        backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
     backend_module_name, backend_cls_name = backend_name.rsplit(".", 1)
     backend_module = import_module(backend_module_name)
     try:
