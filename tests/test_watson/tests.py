@@ -10,7 +10,7 @@ these tests have been amended to 'fooo' and 'baar'. Ho hum.
 from __future__ import unicode_literals
 
 import json
-import re
+import string
 
 try:
     from unittest import skipUnless
@@ -26,7 +26,6 @@ from django.utils.encoding import force_text
 
 from watson import search as watson
 from watson.models import SearchEntry
-from watson.backends import escape_query
 
 from test_watson.models import WatsonTestModel1, WatsonTestModel2
 from test_watson import admin  # Force early registration of all admin models. # noQA
@@ -46,32 +45,6 @@ class RegistrationTest(TestCase):
         self.assertRaises(watson.RegistrationError, lambda: watson.unregister(WatsonTestModel1))
         self.assertTrue(WatsonTestModel1 not in watson.get_registered_models())
         self.assertRaises(watson.RegistrationError, lambda: isinstance(watson.get_adapter(WatsonTestModel1)))
-
-
-class EscapingTest(TestCase):
-    def testEscaping(self):
-        # Test query escaping.
-        re_escape_chars = re.compile(r'[&:"(|)!><~*+-]', re.UNICODE)
-        self.assertEqual(escape_query("", re_escape_chars), "")
-        self.assertEqual(escape_query("abcd", re_escape_chars), "abcd")
-        self.assertEqual(escape_query("abcd efgh", re_escape_chars), "abcd efgh")
-        self.assertEqual(escape_query("abcd      efgh", re_escape_chars), "abcd efgh")
-        self.assertEqual(escape_query("&&abcd&", re_escape_chars), "abcd")
-
-        # check if we leave good characters
-        good_chars = "'$@#$^=_.,"
-        for char in good_chars:
-            self.assertEqual(
-                escape_query("abcd{}efgh".format(char), re_escape_chars),
-                "abcd{}efgh".format(char)
-            )
-
-        # now the ones where we replace harmful characters
-        bad_chars = '&:"(|)!><~*+-'
-        for char in bad_chars:
-            self.assertEqual(
-                escape_query("abcd{}efgh".format(char), re_escape_chars), "abcd efgh"
-            )
 
 
 complex_registration_search_engine = watson.SearchEngine("restricted")
@@ -284,6 +257,10 @@ class InternalsTest(SearchTestBase):
 
 
 class SearchTest(SearchTestBase):
+
+    def testEscaping(self):
+        # This must not crash the database with a syntax error.
+        list(watson.search(string.printable))
 
     def emptySearchTextGivesNoResults(self):
         self.assertEqual(watson.search("").count(), 0)
