@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.4.3 - 28/09/2017
+
+- Fixed escaping of '<' and '>' characters in PostgreSQL backend.
+
+
 ## 1.4.2 - 22/09/2017
 
 - Fixed caching of default search backend.
