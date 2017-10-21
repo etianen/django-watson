@@ -1,6 +1,10 @@
 django-watson
 =============
 
+[![Build Status](https://travis-ci.org/etianen/django-watson.svg?branch=master)](https://travis-ci.org/etianen/django-watson)
+[![PyPI](https://img.shields.io/pypi/v/nine.svg)](https://pypi.python.org/pypi/django-watson)
+[![GitHub license](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://raw.githubusercontent.com/etianen/django-watson/master/LICENSE)
+
 **django-watson** is a fast multi-model full-text search plugin for Django.
 
 It is easy to install and use, and provides high quality search results.
