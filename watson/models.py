@@ -4,6 +4,7 @@ from __future__ import unicode_literals
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from django.utils.encoding import python_2_unicode_compatible
 from django.utils.functional import cached_property
 
 try:
@@ -28,6 +29,7 @@ def has_int_pk(model):
 META_CACHE_KEY = "_meta_cache"
 
 
+@python_2_unicode_compatible
 class SearchEntry(models.Model):
 
     """An entry in the search index."""
@@ -94,8 +96,8 @@ class SearchEntry(models.Model):
         """Returns the URL of the referenced object."""
         return self.url
 
-    def __unicode__(self):
-        """Returns a unicode representation."""
+    def __str__(self):
+        """Returns a string representation."""
         return self.title
 
     class Meta:
