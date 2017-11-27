@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.4.4 - 27/11/2017
+
+- Fixed stringifying objects in Python 3 (@danielquinn).
+
+
 ## 1.4.3 - 28/09/2017
 
 - Fixed escaping of '<' and '>' characters in PostgreSQL backend.
