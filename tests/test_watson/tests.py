@@ -14,7 +14,7 @@ import string
 
 try:
     from unittest import skipUnless
-except:
+except ImportError:
     from django.utils.unittest import skipUnless
 
 from django.test import TestCase
@@ -186,7 +186,7 @@ class InternalsTest(SearchTestBase):
                 self.test11.title = "fooo"
                 self.test11.save()
                 raise Exception("Foo")
-        except:
+        except Exception:
             pass
         # Test a search that should get not model.
         self.assertEqual(watson.search("fooo").count(), 0)

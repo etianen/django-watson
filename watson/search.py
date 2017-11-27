@@ -320,7 +320,7 @@ class SearchContext(object):
             exception = False
             try:
                 return func(*args, **kwargs)
-            except:
+            except Exception:
                 exception = True
                 if not self.__exit__(*sys.exc_info()):
                     raise

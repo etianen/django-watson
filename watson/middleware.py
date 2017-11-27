@@ -6,7 +6,7 @@ from django.core.exceptions import ImproperlyConfigured
 try:
     from django.utils.deprecation import MiddlewareMixin
     cls = MiddlewareMixin
-except:
+except ImportError:
     cls = object
 
 from watson.search import search_context_manager
