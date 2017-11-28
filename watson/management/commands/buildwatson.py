@@ -28,7 +28,7 @@ def get_engine(engine_slug_):
         raise CommandError("Search Engine \"%s\" is not registered!" % force_text(engine_slug_))
 
 
-def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False):
+def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100):
     """rebuilds index for a model"""
 
     search_engine_ = get_engine(engine_slug_)
@@ -64,7 +64,7 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False):
                     engine_slug=force_text(engine_slug_),
                 )
             )
-    _bulk_save_search_entries(iter_search_entries())
+    _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
     return local_refreshed_model_count[0]
 
 
@@ -88,7 +88,14 @@ class Command(BaseCommand):
             model registration. WARNING: buildwatson must be rerun if the filter \
             changes or the index will be incomplete."
         )
-        
+        parser.add_argument
+            '--batch_size',
+            action='store',
+            default=100,
+            type=int,
+            help="The batchsize with which entries will be added to the index."
+        )
+
     def handle(self, *args, **options):
         """Runs the management command."""
         activate(settings.LANGUAGE_CODE)
@@ -102,9 +109,10 @@ class Command(BaseCommand):
             engine_slug = "default"
             engine_selected = False
 
-        # Do we do a partial index?
+        # Do we do a partial index and how large should the batches be?
         slim = options.get("slim")
-
+        batch_size = options.get("batch_size")
+        
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
         # kept in args.
@@ -139,7 +147,7 @@ class Command(BaseCommand):
             if verbosity >= 3:
                 print("Using search engine \"%s\"" % engine_slug)
             for model in models:
-                refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim)
+                refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim, batch_size_=batch_size)
 
         else:  # full rebuild (for one or all search engines)
             if engine_selected:
@@ -155,7 +163,7 @@ class Command(BaseCommand):
                 registered_models = search_engine.get_registered_models()
                 # Rebuild the index for all registered models.
                 for model in registered_models:
-                    refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim)
+                    refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim, batch_size_=batch_size)
 
                 # Clean out any search entries that exist for stale content types.
                 # Only do it during full rebuild
