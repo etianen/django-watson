@@ -88,7 +88,7 @@ class Command(BaseCommand):
             model registration. WARNING: buildwatson must be rerun if the filter \
             changes or the index will be incomplete."
         )
-        parser.add_argument
+        parser.add_argument(
             '--batch_size',
             action='store',
             default=100,
