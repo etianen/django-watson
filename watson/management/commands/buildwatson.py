@@ -36,7 +36,13 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False):
     local_refreshed_model_count = [0]  # HACK: Allows assignment to outer scope.
 
     def iter_search_entries():
-        for obj in model_._default_manager.all().iterator():
+        # Only index specified objects if slim_ is True
+        if slim_ and search_engine_._registered_models[model_].get_live_queryset():
+            obj_list = search_engine_._registered_models[model_].get_live_queryset()
+        else:
+            obj_list = model_._default_manager.all()
+
+        for obj in obj_list.iterator():
             for search_entry in search_engine_._update_obj_index_iter(obj):
                 yield search_entry
             local_refreshed_model_count[0] += 1
@@ -82,7 +88,7 @@ class Command(BaseCommand):
             model registration. WARNING: buildwatson must be rerun if the filter \
             changes or the index will be incomplete."
         )
-
+        
     @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
