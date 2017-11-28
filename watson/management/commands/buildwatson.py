@@ -58,7 +58,7 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, batch_size_=100):
                     engine_slug=force_text(engine_slug_),
                 )
             )
-    _bulk_save_search_entries(iter_search_entries())
+    _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
     return local_refreshed_model_count[0]
 
 
@@ -131,7 +131,7 @@ class Command(BaseCommand):
             if verbosity >= 3:
                 print("Using search engine \"%s\"" % engine_slug)
             for model in models:
-                refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity)
+                refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, batch_size_=batch_size)
 
         else:  # full rebuild (for one or all search engines)
             if engine_selected:
@@ -147,7 +147,7 @@ class Command(BaseCommand):
                 registered_models = search_engine.get_registered_models()
                 # Rebuild the index for all registered models.
                 for model in registered_models:
-                    refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity)
+                    refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, batch_size_=batch_size)
 
                 # Clean out any search entries that exist for stale content types.
                 # Only do it during full rebuild
