@@ -75,7 +75,6 @@ class Command(BaseCommand):
             help='Search engine models are registered with'
         )
 
-    @transaction.atomic()
     def handle(self, *args, **options):
         """Runs the management command."""
         activate(settings.LANGUAGE_CODE)
