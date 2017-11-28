@@ -28,7 +28,7 @@ def get_engine(engine_slug_):
         raise CommandError("Search Engine \"%s\" is not registered!" % force_text(engine_slug_))
 
 
-def rebuild_index_for_model(model_, engine_slug_, verbosity_):
+def rebuild_index_for_model(model_, engine_slug_, verbosity_, batch_size_=100):
     """rebuilds index for a model"""
 
     search_engine_ = get_engine(engine_slug_)
@@ -74,6 +74,13 @@ class Command(BaseCommand):
             action="store",
             help='Search engine models are registered with'
         )
+        parser.add_argument(
+            '--batch_size',
+            action='store',
+            default=100,
+            type=int,
+            help="The batchsize with which entries will be added to the index."
+        )
 
     def handle(self, *args, **options):
         """Runs the management command."""
@@ -88,6 +95,8 @@ class Command(BaseCommand):
             engine_slug = "default"
             engine_selected = False
 
+        batch_size = options.get("batch_size")
+        
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
         # kept in args.
