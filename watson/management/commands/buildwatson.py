@@ -81,9 +81,9 @@ class Command(BaseCommand):
             help='Search engine models are registered with'
         )
         parser.add_argument(
-            '--slim', 
-            action='store_true', 
-            default=False, 
+            '--slim',
+            action='store_true',
+            default=False,
             help="Only include objects which satisfy the filter specified during \
             model registration. WARNING: buildwatson must be rerun if the filter \
             changes or the index will be incomplete."
