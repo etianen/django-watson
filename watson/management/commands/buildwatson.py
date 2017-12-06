@@ -93,7 +93,7 @@ class Command(BaseCommand):
             changes or the index will be incomplete."
         )
         parser.add_argument(
-            '--non-atomic',
+            '--non_atomic',
             action='store_true',
             default=False,
             help="Commit index entries in batches. WARNING: if buildwatson failse, \
@@ -123,7 +123,7 @@ class Command(BaseCommand):
         # Do we do a partial index and how large should the batches be?
         slim = options.get("slim")
         batch_size = options.get("batch_size")
-        non_atomic = options.get("non-atomic")
+        non_atomic = options.get("non_atomic")
         
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
