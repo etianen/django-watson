@@ -124,7 +124,7 @@ class Command(BaseCommand):
         slim = options.get("slim")
         batch_size = options.get("batch_size")
         non_atomic = options.get("non_atomic")
-        
+
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
         # kept in args.
