@@ -28,7 +28,7 @@ def get_engine(engine_slug_):
         raise CommandError("Search Engine \"%s\" is not registered!" % force_text(engine_slug_))
 
 
-def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100):
+def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100, non_atomic_=False):
     """rebuilds index for a model"""
 
     search_engine_ = get_engine(engine_slug_)
@@ -64,7 +64,11 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch
                     engine_slug=force_text(engine_slug_),
                 )
             )
-    _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
+    if non_atomic_:
+        _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
+    else:
+        with transaction.atomic():
+            _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
     return local_refreshed_model_count[0]
 
 
