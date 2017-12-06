@@ -89,6 +89,13 @@ class Command(BaseCommand):
             changes or the index will be incomplete."
         )
         parser.add_argument(
+            '--non-atomic',
+            action='store_true',
+            default=False,
+            help="Commit index entries in batches. WARNING: if buildwatson failse, \
+            the index will be incomplete."
+        )
+        parser.add_argument(
             '--batch_size',
             action='store',
             default=100,
@@ -112,6 +119,7 @@ class Command(BaseCommand):
         # Do we do a partial index and how large should the batches be?
         slim = options.get("slim")
         batch_size = options.get("batch_size")
+        non_atomic = options.get("non-atomic")
         
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
@@ -147,7 +155,13 @@ class Command(BaseCommand):
             if verbosity >= 3:
                 print("Using search engine \"%s\"" % engine_slug)
             for model in models:
-                refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim, batch_size_=batch_size)
+                refreshed_model_count += rebuild_index_for_model(
+                    model,
+                    engine_slug,
+                    verbosity,
+                    slim_=slim,
+                    batch_size_=batch_size,
+                    non_atomic_=non_atomic)
 
         else:  # full rebuild (for one or all search engines)
             if engine_selected:
@@ -163,7 +177,13 @@ class Command(BaseCommand):
                 registered_models = search_engine.get_registered_models()
                 # Rebuild the index for all registered models.
                 for model in registered_models:
-                    refreshed_model_count += rebuild_index_for_model(model, engine_slug, verbosity, slim_=slim, batch_size_=batch_size)
+                    refreshed_model_count += rebuild_index_for_model(
+                        model,
+                        engine_slug,
+                        verbosity,
+                        slim_=slim,
+                        batch_size_=batch_size,
+                        non_atomic_=non_atomic)
 
                 # Clean out any search entries that exist for stale content types.
                 # Only do it during full rebuild
