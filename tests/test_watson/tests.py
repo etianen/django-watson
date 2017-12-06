@@ -27,7 +27,7 @@ from django.utils.encoding import force_text
 from watson import search as watson
 from watson.models import SearchEntry
 
-from test_watson.models import WatsonTestModel1, WatsonTestModel2
+from test_watson.models import WatsonTestModel1, WatsonTestModel2, WatsonTestModel3
 from test_watson import admin  # Force early registration of all admin models. # noQA
 
 
@@ -67,6 +67,8 @@ class SearchTestBase(TestCase):
 
     model2 = WatsonTestModel2
 
+    model3 = WatsonTestModel3
+
     def setUp(self):
         # If migrations are off, then this is needed to get the indices installed. It has to
         # be called in the setUp() method, but multiple invocations should be safe.
@@ -78,6 +80,7 @@ class SearchTestBase(TestCase):
         # Register the test models.
         watson.register(self.model1)
         watson.register(self.model2, exclude=("id",))
+        watson.register(self.model3, exclude=("id",))
         complex_registration_search_engine.register(
             WatsonTestModel1, exclude=("content", "description",), store=("is_published",)
         )
@@ -105,6 +108,16 @@ class SearchTestBase(TestCase):
             content="content model2 instance22",
             description="description model2 instance22",
         )
+        self.test31 = WatsonTestModel3.objects.create(
+            title="title model3 instance31",
+            content="content model3 instance31",
+            description="description model3 instance31",
+        )
+        self.test32 = WatsonTestModel3.objects.create(
+            title="title model3 instance32",
+            content="content model3 instance32",
+            description="description model3 instance32",
+        )
 
     def tearDown(self):
         # Re-register the old registered models.
@@ -113,6 +126,7 @@ class SearchTestBase(TestCase):
         # Unregister the test models.
         watson.unregister(self.model1)
         watson.unregister(self.model2)
+        watson.unregister(self.model3)
         complex_registration_search_engine.unregister(WatsonTestModel1)
         complex_registration_search_engine.unregister(WatsonTestModel2)
         # Delete the test models.
@@ -129,37 +143,48 @@ class SearchTestBase(TestCase):
 class InternalsTest(SearchTestBase):
 
     def testSearchEntriesCreated(self):
-        self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 4)
+        self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 6)
 
     def testBuildWatsonForModelCommand(self):
         # Hack a change into the model using a bulk update, which doesn't send signals.
         WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo1_selective")
         WatsonTestModel2.objects.filter(id=self.test21.id).update(title="fooo2_selective")
+        WatsonTestModel3.objects.filter(id=self.test31.id).update(title="fooo3_selective")
         # Test that no update has happened.
         self.assertEqual(watson.search("fooo1_selective").count(), 0)
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
+        self.assertEqual(watson.search("fooo3_selective").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", "test_watson.WatsonTestModel1", verbosity=0)
         # Test that the update is now applied to selected model.
         self.assertEqual(watson.search("fooo1_selective").count(), 1)
         self.assertEqual(watson.search("fooo2_selective").count(), 0)
-        call_command("buildwatson", "test_watson.WatsonTestModel1", "test_watson.WatsonTestModel2", verbosity=0)
+        self.assertEqual(watson.search("fooo3_selective").count(), 0)
+        call_command(
+            "buildwatson",
+            "test_watson.WatsonTestModel1", "test_watson.WatsonTestModel2", "test_watson.WatsonTestModel3",
+            verbosity=0,
+        )
         # Test that the update is now applied to multiple selected models.
         self.assertEqual(watson.search("fooo1_selective").count(), 1)
         self.assertEqual(watson.search("fooo2_selective").count(), 1)
+        self.assertEqual(watson.search("fooo3_selective").count(), 1)
 
     def testBuildWatsonCommand(self):
         # Hack a change into the model using a bulk update, which doesn't send signals.
         WatsonTestModel1.objects.filter(id=self.test11.id).update(title="fooo1")
         WatsonTestModel2.objects.filter(id=self.test21.id).update(title="fooo2")
+        WatsonTestModel3.objects.filter(id=self.test31.id).update(title="fooo3")
         # Test that no update has happened.
         self.assertEqual(watson.search("fooo1").count(), 0)
         self.assertEqual(watson.search("fooo2").count(), 0)
+        self.assertEqual(watson.search("fooo3").count(), 0)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
         # Test that the update is now applied.
         self.assertEqual(watson.search("fooo1").count(), 1)
         self.assertEqual(watson.search("fooo2").count(), 1)
+        self.assertEqual(watson.search("fooo3").count(), 1)
 
     def testUpdateSearchIndex(self):
         # Update a model and make sure that the search results match.
@@ -226,20 +251,20 @@ class InternalsTest(SearchTestBase):
         for search_entry in search_entries.all()[:2]:
             search_entry.id = None
             search_entry.save()
-        # Make sure that we have six (including duplicates).
-        self.assertEqual(search_entries.all().count(), 6)
+        # Make sure that we have eight (including duplicates).
+        self.assertEqual(search_entries.all().count(), 8)
         # Run the rebuild command.
         call_command("buildwatson", verbosity=0)
-        # Make sure that we have four again (including duplicates).
-        self.assertEqual(search_entries.all().count(), 4)
+        # Make sure that we have six again (including duplicates).
+        self.assertEqual(search_entries.all().count(), 6)
 
     def testEmptyFilterGivesAllResults(self):
-        for model in (WatsonTestModel1, WatsonTestModel2):
+        for model in (WatsonTestModel1, WatsonTestModel2, WatsonTestModel3):
             self.assertEqual(watson.filter(model, "").count(), 2)
             self.assertEqual(watson.filter(model, " ").count(), 2)
 
     def testFilter(self):
-        for model in (WatsonTestModel1, WatsonTestModel2):
+        for model in (WatsonTestModel1, WatsonTestModel2, WatsonTestModel3):
             # Test can find all.
             self.assertEqual(watson.filter(model, "TITLE").count(), 2)
         # Test can find a specific one.
@@ -268,20 +293,24 @@ class SearchTest(SearchTestBase):
 
     def testMultiTableSearch(self):
         # Test a search that should get all models.
-        self.assertEqual(watson.search("TITLE").count(), 4)
-        self.assertEqual(watson.search("CONTENT").count(), 4)
-        self.assertEqual(watson.search("DESCRIPTION").count(), 4)
-        self.assertEqual(watson.search("TITLE CONTENT DESCRIPTION").count(), 4)
+        self.assertEqual(watson.search("TITLE").count(), 6)
+        self.assertEqual(watson.search("CONTENT").count(), 6)
+        self.assertEqual(watson.search("DESCRIPTION").count(), 6)
+        self.assertEqual(watson.search("TITLE CONTENT DESCRIPTION").count(), 6)
         # Test a search that should get two models.
         self.assertEqual(watson.search("MODEL1").count(), 2)
         self.assertEqual(watson.search("MODEL2").count(), 2)
+        self.assertEqual(watson.search("MODEL3").count(), 2)
         self.assertEqual(watson.search("TITLE MODEL1").count(), 2)
         self.assertEqual(watson.search("TITLE MODEL2").count(), 2)
+        self.assertEqual(watson.search("TITLE MODEL3").count(), 2)
         # Test a search that should get one model.
         self.assertEqual(watson.search("INSTANCE11").count(), 1)
         self.assertEqual(watson.search("INSTANCE21").count(), 1)
+        self.assertEqual(watson.search("INSTANCE31").count(), 1)
         self.assertEqual(watson.search("TITLE INSTANCE11").count(), 1)
         self.assertEqual(watson.search("TITLE INSTANCE21").count(), 1)
+        self.assertEqual(watson.search("TITLE INSTANCE31").count(), 1)
         # Test a search that should get zero models.
         self.assertEqual(watson.search("FOOO").count(), 0)
         self.assertEqual(watson.search("FOOO INSTANCE11").count(), 0)
@@ -352,7 +381,7 @@ class SearchTest(SearchTestBase):
         "Search backend does not support prefix matching."
     )
     def testMultiTablePrefixSearch(self):
-        self.assertEqual(watson.search("DESCR").count(), 4)
+        self.assertEqual(watson.search("DESCR").count(), 6)
 
     def testLimitedModelList(self):
         # Test a search that should get all models.
@@ -362,11 +391,15 @@ class SearchTest(SearchTestBase):
         self.assertEqual(watson.search("MODEL1", models=(WatsonTestModel1,)).count(), 2)
         self.assertEqual(watson.search("MODEL2", models=(WatsonTestModel1, WatsonTestModel2)).count(), 2)
         self.assertEqual(watson.search("MODEL2", models=(WatsonTestModel2,)).count(), 2)
+        self.assertEqual(watson.search("MODEL3", models=(WatsonTestModel2, WatsonTestModel3)).count(), 2)
+        self.assertEqual(watson.search("MODEL3", models=(WatsonTestModel3,)).count(), 2)
         # Test a search that should get one model.
         self.assertEqual(watson.search("INSTANCE11", models=(WatsonTestModel1, WatsonTestModel2)).count(), 1)
         self.assertEqual(watson.search("INSTANCE11", models=(WatsonTestModel1,)).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", models=(WatsonTestModel1, WatsonTestModel2,)).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", models=(WatsonTestModel2,)).count(), 1)
+        self.assertEqual(watson.search("INSTANCE31", models=(WatsonTestModel2, WatsonTestModel3,)).count(), 1)
+        self.assertEqual(watson.search("INSTANCE31", models=(WatsonTestModel3,)).count(), 1)
         # Test a search that should get zero models.
         self.assertEqual(watson.search("MODEL1", models=(WatsonTestModel2,)).count(), 0)
         self.assertEqual(watson.search("MODEL2", models=(WatsonTestModel1,)).count(), 0)
@@ -375,17 +408,21 @@ class SearchTest(SearchTestBase):
 
     def testExcludedModelList(self):
         # Test a search that should get all models.
-        self.assertEqual(watson.search("TITLE", exclude=()).count(), 4)
+        self.assertEqual(watson.search("TITLE", exclude=()).count(), 6)
         # Test a search that should get two models.
         self.assertEqual(watson.search("MODEL1", exclude=()).count(), 2)
         self.assertEqual(watson.search("MODEL1", exclude=(WatsonTestModel2,)).count(), 2)
         self.assertEqual(watson.search("MODEL2", exclude=()).count(), 2)
         self.assertEqual(watson.search("MODEL2", exclude=(WatsonTestModel1,)).count(), 2)
+        self.assertEqual(watson.search("MODEL3", exclude=()).count(), 2)
+        self.assertEqual(watson.search("MODEL3", exclude=(WatsonTestModel1,)).count(), 2)
         # Test a search that should get one model.
         self.assertEqual(watson.search("INSTANCE11", exclude=()).count(), 1)
         self.assertEqual(watson.search("INSTANCE11", exclude=(WatsonTestModel2,)).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", exclude=()).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", exclude=(WatsonTestModel1,)).count(), 1)
+        self.assertEqual(watson.search("INSTANCE31", exclude=()).count(), 1)
+        self.assertEqual(watson.search("INSTANCE31", exclude=(WatsonTestModel1,)).count(), 1)
         # Test a search that should get zero models.
         self.assertEqual(watson.search("MODEL1", exclude=(WatsonTestModel1,)).count(), 0)
         self.assertEqual(watson.search("MODEL2", exclude=(WatsonTestModel2,)).count(), 0)
@@ -414,12 +451,19 @@ class SearchTest(SearchTestBase):
             title__icontains="MODEL2",
             description__icontains="MODEL2",
         ),)).count(), 2)
+        self.assertEqual(watson.search("MODEL3", models=(WatsonTestModel3.objects.filter(
+            title__icontains="MODEL3",
+            description__icontains="MODEL3",
+        ),)).count(), 2)
         # Test a search that should get one model.
         self.assertEqual(watson.search("INSTANCE11", models=(WatsonTestModel1.objects.filter(
             title__icontains="MODEL1",
         ),)).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", models=(WatsonTestModel2.objects.filter(
             title__icontains="MODEL2",
+        ),)).count(), 1)
+        self.assertEqual(watson.search("INSTANCE31", models=(WatsonTestModel3.objects.filter(
+            title__icontains="MODEL3",
         ),)).count(), 1)
         # Test a search that should get no models.
         self.assertEqual(watson.search("INSTANCE11", models=(WatsonTestModel1.objects.filter(
@@ -437,7 +481,7 @@ class SearchTest(SearchTestBase):
                 exclude=(
                     WatsonTestModel1.objects.filter(title__icontains="FOOO"),
                     WatsonTestModel2.objects.filter(title__icontains="FOOO"),)
-            ).count(), 4)
+            ).count(), 6)
         # Test a search that should get two models.
         self.assertEqual(watson.search("MODEL1", exclude=(WatsonTestModel1.objects.filter(
             title__icontains="INSTANCE21",
@@ -447,11 +491,18 @@ class SearchTest(SearchTestBase):
             title__icontains="INSTANCE11",
             description__icontains="INSTANCE12",
         ),)).count(), 2)
+        self.assertEqual(watson.search("MODEL3", exclude=(WatsonTestModel3.objects.filter(
+            title__icontains="INSTANCE11",
+            description__icontains="INSTANCE12",
+        ),)).count(), 2)
         # Test a search that should get one model.
         self.assertEqual(watson.search("INSTANCE11", exclude=(WatsonTestModel1.objects.filter(
             title__icontains="MODEL2",
         ),)).count(), 1)
         self.assertEqual(watson.search("INSTANCE21", exclude=(WatsonTestModel2.objects.filter(
+            title__icontains="MODEL1",
+        ),)).count(), 1)
+        self.assertEqual(watson.search("INSTANCE21", exclude=(WatsonTestModel3.objects.filter(
             title__icontains="MODEL1",
         ),)).count(), 1)
         # Test a search that should get no models.
@@ -485,14 +536,16 @@ class LiveFilterSearchTest(SearchTest):
 
     def testUnpublishedModelsNotFound(self):
         # Make sure that there are four to find!
-        self.assertEqual(watson.search("tItle Content Description").count(), 4)
-        # Unpublish two objects.
+        self.assertEqual(watson.search("tItle Content Description").count(), 6)
+        # Unpublish some objects.
         self.test11.is_published = False
         self.test11.save()
         self.test21.is_published = False
         self.test21.save()
+        self.test31.is_published = False
+        self.test31.save()
         # This should return 4, but two of them are unpublished.
-        self.assertEqual(watson.search("tItle Content Description").count(), 2)
+        self.assertEqual(watson.search("tItle Content Description").count(), 4)
 
     def testCanOverridePublication(self):
         # Unpublish two objects.
@@ -635,11 +688,13 @@ class SiteSearchTest(SearchTestBase):
         response = self.client.get("/simple/json/?q=title")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
         results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
-        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results), 6)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)
         self.assertTrue("title model2 instance21" in results)
         self.assertTrue("title model2 instance22" in results)
+        self.assertTrue("title model3 instance31" in results)
+        self.assertTrue("title model3 instance32" in results)
 
     def testSiteSearchCustom(self):
         # Test a search than should find everything.
@@ -678,11 +733,13 @@ class SiteSearchTest(SearchTestBase):
         response = self.client.get("/custom/json/?fooo=title&page=last")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
         results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
-        self.assertEqual(len(results), 4)
+        self.assertEqual(len(results), 6)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)
         self.assertTrue("title model2 instance21" in results)
         self.assertTrue("title model2 instance22" in results)
+        self.assertTrue("title model3 instance31" in results)
+        self.assertTrue("title model3 instance32" in results)
         # Test a search with an invalid page.
         response = self.client.get("/custom/json/?fooo=title&page=200")
         self.assertEqual(response.status_code, 404)

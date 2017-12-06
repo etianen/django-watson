@@ -1,3 +1,4 @@
+import uuid
 from django.db import models
 from django.utils.encoding import force_text, python_2_unicode_compatible
 
@@ -42,8 +43,17 @@ def get_str_pk():
 
 
 class WatsonTestModel2(TestModelBase):
+
     id = models.CharField(
         primary_key=True,
         max_length=100,
         default=get_str_pk
+    )
+
+
+class WatsonTestModel3(TestModelBase):
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
     )

@@ -12,7 +12,7 @@ from weakref import WeakValueDictionary
 from django.conf import settings
 from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
-from django.db import models, connections
+from django.db import models, connections, router
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.db.models.query import QuerySet
@@ -445,15 +445,15 @@ class SearchEngine(object):
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
         from django.contrib.contenttypes.models import ContentType
-        from watson.models import SearchEntry, has_int_pk
+        from watson.models import SearchEntry, has_int_pk, get_str_pk
         model = obj.__class__
         content_type = ContentType.objects.get_for_model(model)
-        object_id = force_text(obj.pk)
         # Get the basic list of search entries.
         search_entries = SearchEntry.objects.filter(
             content_type=content_type,
             engine_slug=self._engine_slug,
         )
+        object_id = get_str_pk(obj, connections[search_entries.db])
         if has_int_pk(model):
             # Do a fast indexed lookup.
             object_id_int = int(obj.pk)
@@ -471,11 +471,11 @@ class SearchEngine(object):
     def _update_obj_index_iter(self, obj):
         """Either updates the given object index, or yields an unsaved search entry."""
         from django.contrib.contenttypes.models import ContentType
-        from watson.models import SearchEntry
+        from watson.models import SearchEntry, get_str_pk
         model = obj.__class__
         adapter = self.get_adapter(model)
         content_type = ContentType.objects.get_for_model(model)
-        object_id = force_text(obj.pk)
+        object_id = get_str_pk(obj, connections[router.db_for_write(ContentType)])
         # Create the search entry data.
         search_entry_data = {
             "engine_slug": self._engine_slug,

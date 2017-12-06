@@ -2,9 +2,11 @@
 
 from __future__ import unicode_literals
 
+import uuid
+
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.encoding import python_2_unicode_compatible, force_text
 from django.utils.functional import cached_property
 
 try:
@@ -24,6 +26,10 @@ def has_int_pk(model):
             isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
         )
     )
+
+
+def get_str_pk(obj, connection):
+    return obj.pk.hex if isinstance(obj.pk, uuid.UUID) and connection.vendor != "postgresql" else force_text(obj.pk)
 
 
 META_CACHE_KEY = "_meta_cache"
