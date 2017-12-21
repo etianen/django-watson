@@ -38,6 +38,8 @@ script:
   - coverage run -a tests/runtests.py -d mysql
 after_success:
   - coverage report
+before_deploy:
+  - pip install wheel
 deploy:
   provider: pypi
   user: etianen
