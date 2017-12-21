@@ -27,7 +27,7 @@ Please read the [Getting Started][] guide for more information.
 
 [Getting Started]: https://github.com/etianen/django-watson/wiki
     "Getting started with django-watson"
-    
+
 Download instructions, bug reporting and links to full documentation can be
 found at the [main project website][].
 
@@ -51,8 +51,10 @@ You can run the test suite yourself from within a virtual environment with the f
 commands.
 
 ```
-    pip install tox
-    tox
+    pip install psycopg2 mysqlclient -e .
+    tests/runtests.py
+    tests/runtests.py -d psql
+    tests/runtests.py -d mysql
 ```
 
 More information
@@ -63,7 +65,7 @@ from the [django-watson project site][].
 
 [django-watson project site]: http://github.com/etianen/django-watson
     "django-watson on GitHub"
-    
+
 Dave Hall is a freelance web developer, based in Cambridge, UK. You can usually
 find him on the Internet in a number of different places:
 

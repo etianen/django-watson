@@ -334,36 +334,6 @@ class PostgresSearchBackend(SearchBackend):
         )
 
 
-class PostgresLegacySearchBackend(PostgresSearchBackend):
-
-    """
-    A search backend that uses native PostgreSQL full text indices.
-
-    This backend doesn't support prefix matching, and works with PostgreSQL 8.3 and below.
-    """
-
-    supports_prefix_matching = False
-
-    def escape_postgres_query(self, text):
-        """Escapes the given text to become a valid ts_query."""
-        return " & ".join(
-            "$${0}$$".format(word)
-            for word
-            in escape_query(text, RE_POSTGRES_ESCAPE_CHARS).split()
-        )
-
-
-class PostgresPrefixLegacySearchBackend(RegexSearchMixin, PostgresLegacySearchBackend):
-
-    """
-    A legacy search backend that uses a regexp to perform matches, but still allows
-    relevance rankings.
-
-    Use if your postgres vesion is less than 8.3, and you absolutely can't live without
-    prefix matching. Beware, this backend can get slow with large datasets!
-    """
-
-
 def escape_mysql_boolean_query(search_text):
     return " ".join(
         '+{word}*'.format(
@@ -495,12 +465,6 @@ class MySQLSearchBackend(SearchBackend):
         )
 
 
-def get_postgresql_version(connection):
-    """Returns the version number of the PostgreSQL connection."""
-    from django.db.backends.postgresql_psycopg2.version import get_version
-    return get_version(connection)
-
-
 class AdaptiveSearchBackend(SearchBackend):
 
     """
@@ -512,11 +476,7 @@ class AdaptiveSearchBackend(SearchBackend):
         """Guess the correct search backend and initialize it."""
         connection = connections[router.db_for_read(SearchEntry)]
         if connection.vendor == "postgresql":
-            version = get_postgresql_version(connection)
-            if version > 80400:
-                return PostgresSearchBackend()
-            if version > 80300:
-                return PostgresLegacySearchBackend()
+            return PostgresSearchBackend()
         if connection.vendor == "mysql":
             return MySQLSearchBackend()
         return RegexSearchBackend()

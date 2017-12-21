@@ -16,5 +16,5 @@ urlpatterns = [
         "paginate_by": 10,
     }),
 
-    url("^admin/", include(admin.site.urls)),
+    url("^admin/", admin.site.urls),
 ]

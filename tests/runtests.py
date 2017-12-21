@@ -91,6 +91,12 @@ def main():
             "django.contrib.auth.middleware.AuthenticationMiddleware",
             "django.contrib.messages.middleware.MessageMiddleware",
         ),
+        MIDDLEWARE=(
+            "django.middleware.common.CommonMiddleware",
+            "django.contrib.sessions.middleware.SessionMiddleware",
+            "django.contrib.auth.middleware.AuthenticationMiddleware",
+            "django.contrib.messages.middleware.MessageMiddleware",
+        ),
         USE_TZ=True,
         STATIC_URL="/static/",
         TEST_RUNNER="django.test.runner.DiscoverRunner",

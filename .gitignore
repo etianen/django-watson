@@ -3,7 +3,6 @@
 .project
 .pydevproject
 .settings
-.tox
 *.pyc
 *.pyo
 .bzr
