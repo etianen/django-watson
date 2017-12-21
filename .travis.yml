@@ -38,8 +38,6 @@ script:
   - coverage run -a tests/runtests.py -d mysql
 after_success:
   - coverage report
-before_deploy:
-  - pip install wheel
 deploy:
   provider: pypi
   user: etianen
@@ -50,6 +48,5 @@ deploy:
     condition: $DJANGO='>=2.0,<2.1'
     python: 3.6
     repo: etianen/django-watson
-  distributions: sdist bdist_wheel
 notifications:
   email: false
