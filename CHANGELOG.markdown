@@ -1,5 +1,17 @@
 # django-watson changelog
 
+## 1.5.0 - 21/12/2017
+
+- Added `--slim` option to `buildwatson` command. This only includes
+  objects which satisfy the filter specified during model registration
+  (Dustin Broderick).
+- Added `--batch-size` option to `buildwatson` command. This controls the
+  batch size for bulk-inserting search entries (Dustin Broderick).
+- Added `--non-atomic` option to `buildwatson` command. This removes the
+  transaction wrapper from `buildwatson`, which can prevent timeouts on
+  huge datasets for some server setups.
+
+
 ## 1.4.4 - 27/11/2017
 
 - Fixed stringifying objects in Python 3 (@danielquinn).

@@ -93,14 +93,14 @@ class Command(BaseCommand):
             changes or the index will be incomplete."
         )
         parser.add_argument(
-            '--non_atomic',
+            '--non-atomic',
             action='store_true',
             default=False,
             help="Commit index entries in batches. WARNING: if buildwatson failse, \
             the index will be incomplete."
         )
         parser.add_argument(
-            '--batch_size',
+            '--batch-size',
             action='store',
             default=100,
             type=int,
