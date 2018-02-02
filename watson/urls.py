@@ -6,6 +6,7 @@ from django.conf.urls import url
 
 from watson.views import search, search_json
 
+app_name = 'watson'
 urlpatterns = [
 
     url("^$", search, name="search"),
