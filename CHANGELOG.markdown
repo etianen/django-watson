@@ -1,5 +1,11 @@
 # django-watson changelog
 
+## 1.5.1 - 09/02/2018
+
+- Added `app_name` to `watson.urls` to improve Django 2.0 compatibility
+  (@ryokamiya).
+
+
 ## 1.5.0 - 21/12/2017
 
 - Added `--slim` option to `buildwatson` command. This only includes
