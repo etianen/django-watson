@@ -23,7 +23,7 @@ def has_int_pk(model):
             isinstance(pk, (models.IntegerField, models.AutoField)) and
             not isinstance(pk, models.BigIntegerField)
         ) or (
-            isinstance(pk, models.ForeignKey) and has_int_pk(pk.rel.to)
+            isinstance(pk, models.ForeignKey) and has_int_pk(pk.remote_field.model)
         )
     )
 
