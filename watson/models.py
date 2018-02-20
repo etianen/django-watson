@@ -15,16 +15,23 @@ except ImportError:
     from django.contrib.contenttypes.generic import GenericForeignKey
 
 
+INTEGER_FIELDS = (models.IntegerField, models.AutoField,)
+BIG_INTEGER_FIELDS = (models.BigIntegerField,)
+
+try:
+    BIG_INTEGER_FIELDS += (models.BigAutoField,)
+except AttributeError:  # Django < 2.0.
+    pass
+
+
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
     pk = model._meta.pk
     return (
-        (
-            isinstance(pk, (models.IntegerField, models.AutoField)) and
-            not isinstance(pk, models.BigIntegerField)
-        ) or (
-            isinstance(pk, models.ForeignKey) and has_int_pk(pk.remote_field.model)
-        )
+        isinstance(pk, INTEGER_FIELDS) and
+        not isinstance(pk, BIG_INTEGER_FIELDS)
+    ) or (
+        isinstance(pk, models.ForeignKey) and has_int_pk(pk.remote_field.model)
     )
 
 
