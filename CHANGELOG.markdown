@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.5.2 - 23/02/2018
+
+- Django 2.0 compatibility improvements (@zandeez, @etianen).
+
+
 ## 1.5.1 - 09/02/2018
 
 - Added `app_name` to `watson.urls` to improve Django 2.0 compatibility
