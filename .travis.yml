@@ -45,7 +45,7 @@ deploy:
     secure: rzaq3pbJz25SVXyR/fn+gLaYxu0LqCEE+wcesg8pjA8cLLvFdLvXi0ZjmixxVl2u4HlndZrUgwTrRGVIQR1TOL0jGRYOUCJDzAaZqJkg+Qykz89iKSnentyOpNJe6fRAHsqFxBESYZjG8JEZvtRv+JIZLY+QR+KCA1xaeu4Afpw=
   on:
     tags: true
-    condition: $DJANGO='>=2.0,<2.1'
+    condition: $DJANGO = '>=2.0,<2.1'
     python: 3.6
     repo: etianen/django-watson
 notifications:
