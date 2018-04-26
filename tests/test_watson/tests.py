@@ -23,6 +23,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django import template
 from django.utils.encoding import force_text
+from django.db.models import Case, When, Value, IntegerField
 
 from watson import search as watson
 from watson.models import SearchEntry
@@ -526,6 +527,26 @@ class SearchTest(SearchTestBase):
                 WatsonTestModel2.objects.filter(title__icontains="MODEL1"),
             )
         ).get().title, "title model1 instance11")
+
+    def testReferencingWatsonRankInAnnotations(self):
+        """We should be able to reference watson_rank from annotate expressions"""
+        entries = watson.search("model1").annotate(
+            relevant=Case(
+                When(watson_rank__gt=1.0, then=Value(1)),
+                default_value=Value(0),
+                output_field=IntegerField()
+            )
+        )
+
+        # watson_rank does not return the same value across backends, so we
+        # can't hard code what those will be. In some cases (e.g. the regex
+        # backend) all ranking is hard coded to 1.0. That doesn't matter - we
+        # just want to make sure that Django is able to construct a valid query
+        for entry in entries:
+            if entry.watson_rank > 1.0:
+                self.assertTrue(entry.relevant)
+            else:
+                self.assertFalse(entry.relevant)
 
 
 class LiveFilterSearchTest(SearchTest):
