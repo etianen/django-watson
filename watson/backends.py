@@ -8,7 +8,8 @@ import re
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, connections, router
-from django.db.models import Q
+from django.db.models import Q, FloatField
+from django.db.models.expressions import RawSQL, Value
 from django.utils.encoding import force_text
 from django.utils import six
 
@@ -65,11 +66,7 @@ class SearchBackend(six.with_metaclass(abc.ABCMeta)):
 
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
-        return queryset.extra(
-            select={
-                "watson_rank": "1",
-            },
-        )
+        return queryset.annotate(watson_rank=Value(1.0, output_field=FloatField()))
 
     @abc.abstractmethod
     def do_search(self, engine_slug, queryset, search_text):
@@ -78,11 +75,7 @@ class SearchBackend(six.with_metaclass(abc.ABCMeta)):
 
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Ranks the given queryset according to the relevance of the given search text."""
-        return queryset.extra(
-            select={
-                "watson_rank": "1",
-            },
-        )
+        return queryset.annotate(watson_rank=Value(1.0, output_field=FloatField()))
 
     @abc.abstractmethod
     def do_filter(self, engine_slug, queryset, search_text):
@@ -274,15 +267,11 @@ class PostgresSearchBackend(SearchBackend):
 
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
-        return queryset.extra(
-            select={
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
-                    search_config=self.search_config
-                ),
-            },
-            select_params=(self.escape_postgres_query(search_text),),
-            order_by=("-watson_rank",),
-        )
+        return queryset.annotate(
+                watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                    config=self.search_config,
+                ), (self.escape_postgres_query(search_text),))
+        ).order_by("-watson_rank")
 
     def do_filter(self, engine_slug, queryset, search_text):
         """Performs the full text filter."""
@@ -318,15 +307,11 @@ class PostgresSearchBackend(SearchBackend):
 
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
-        return queryset.extra(
-            select={
-                "watson_rank": "ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{search_config}', %s))".format(
-                    search_config=self.search_config
-                ),
-            },
-            select_params=(self.escape_postgres_query(search_text),),
-            order_by=("-watson_rank",),
-        )
+        return queryset.annotate(
+                watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                    config=self.search_config,
+                ), (self.escape_postgres_query(search_text),))
+        ).order_by("-watson_rank")
 
     def do_string_cast(self, connection, column_name):
         return "{column_name}::text".format(
@@ -411,17 +396,13 @@ class MySQLSearchBackend(SearchBackend):
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
         search_text = self._format_query(search_text)
-        return queryset.extra(
-            select={
-                "watson_rank": """
+        return queryset.annotate(
+                watson_rank=RawSQL("""
                     ((MATCH (title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
                     ((MATCH (description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
                     ((MATCH (content) AGAINST (%s IN BOOLEAN MODE)) * 1)
-                """,
-            },
-            select_params=(search_text, search_text, search_text,),
-            order_by=("-watson_rank",),
-        )
+                """, (search_text, search_text, search_text,))
+        ).order_by("-watson_rank")
 
     def do_filter(self, engine_slug, queryset, search_text):
         """Performs the full text filter."""
@@ -452,17 +433,13 @@ class MySQLSearchBackend(SearchBackend):
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
         search_text = self._format_query(search_text)
-        return queryset.extra(
-            select={
-                "watson_rank": """
+        return queryset.annotate(
+                watson_rank=RawSQL("""
                     ((MATCH (watson_searchentry.title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
                     ((MATCH (watson_searchentry.description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
                     ((MATCH (watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)) * 1)
-                """,
-            },
-            select_params=(search_text, search_text, search_text,),
-            order_by=("-watson_rank",),
-        )
+                """, (search_text, search_text, search_text,))
+        ).order_by("-watson_rank")
 
 
 class AdaptiveSearchBackend(SearchBackend):
