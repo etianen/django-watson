@@ -173,8 +173,11 @@ class PostgresSearchBackend(SearchBackend):
 
     """A search backend that uses native PostgreSQL full text indices."""
 
-    search_config = getattr(settings, "WATSON_POSTGRES_SEARCH_CONFIG", "pg_catalog.english")
-    """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
+    def __init__(self, search_config=None):
+        """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
+        self.search_config = search_config
+        if self.search_config is None:
+            self.search_config = getattr(settings, "WATSON_POSTGRES_SEARCH_CONFIG", "pg_catalog.english")
 
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
@@ -268,9 +271,9 @@ class PostgresSearchBackend(SearchBackend):
     def do_search_ranking(self, engine_slug, queryset, search_text):
         """Performs full text ranking."""
         return queryset.annotate(
-                watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
-                    config=self.search_config,
-                ), (self.escape_postgres_query(search_text),))
+            watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                config=self.search_config,
+            ), (self.escape_postgres_query(search_text),))
         ).order_by("-watson_rank")
 
     def do_filter(self, engine_slug, queryset, search_text):
@@ -308,9 +311,9 @@ class PostgresSearchBackend(SearchBackend):
     def do_filter_ranking(self, engine_slug, queryset, search_text):
         """Performs the full text ranking."""
         return queryset.annotate(
-                watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
-                    config=self.search_config,
-                ), (self.escape_postgres_query(search_text),))
+            watson_rank=RawSQL("ts_rank_cd(watson_searchentry.search_tsv, to_tsquery('{config}', %s))".format(
+                config=self.search_config,
+            ), (self.escape_postgres_query(search_text),))
         ).order_by("-watson_rank")
 
     def do_string_cast(self, connection, column_name):
@@ -434,11 +437,11 @@ class MySQLSearchBackend(SearchBackend):
         """Performs the full text ranking."""
         search_text = self._format_query(search_text)
         return queryset.annotate(
-                watson_rank=RawSQL("""
-                    ((MATCH (watson_searchentry.title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
-                    ((MATCH (watson_searchentry.description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
-                    ((MATCH (watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)) * 1)
-                """, (search_text, search_text, search_text,))
+            watson_rank=RawSQL("""
+                ((MATCH (watson_searchentry.title) AGAINST (%s IN BOOLEAN MODE)) * 3) +
+                ((MATCH (watson_searchentry.description) AGAINST (%s IN BOOLEAN MODE)) * 2) +
+                ((MATCH (watson_searchentry.content) AGAINST (%s IN BOOLEAN MODE)) * 1)
+            """, (search_text, search_text, search_text,))
         ).order_by("-watson_rank")
 
 
@@ -449,11 +452,11 @@ class AdaptiveSearchBackend(SearchBackend):
     DATABASES["default"] settings.
     """
 
-    def __new__(cls):
+    def __new__(cls, backend_init_kwargs={}):
         """Guess the correct search backend and initialize it."""
         connection = connections[router.db_for_read(SearchEntry)]
         if connection.vendor == "postgresql":
-            return PostgresSearchBackend()
+            return PostgresSearchBackend(**backend_init_kwargs)
         if connection.vendor == "mysql":
-            return MySQLSearchBackend()
-        return RegexSearchBackend()
+            return MySQLSearchBackend(**backend_init_kwargs)
+        return RegexSearchBackend(**backend_init_kwargs)

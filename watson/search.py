@@ -570,10 +570,14 @@ class SearchEngine(object):
                 else:
                     yield queryset.all()
 
-    def search(self, search_text, models=(), exclude=(), ranking=True, backend_name=None):
+    def search(self, search_text, models=(), exclude=(), ranking=True,
+               backend_name=None, backend_init_kwargs={}, get_backend_from_cache=True):
         """Performs a search using the given text, returning a queryset of SearchEntry."""
         from watson.models import SearchEntry
-        backend = get_backend(backend_name=backend_name)
+        backend = get_backend(
+            backend_name=backend_name, backend_init_kwargs=backend_init_kwargs,
+            from_cache=get_backend_from_cache
+        )
         # Check for blank search text.
         search_text = search_text.strip()
         if not search_text:
@@ -596,7 +600,8 @@ class SearchEngine(object):
         # Return the complete queryset.
         return queryset
 
-    def filter(self, queryset, search_text, ranking=True, backend_name=None):
+    def filter(self, queryset, search_text, ranking=True, backend_name=None,
+               backend_init_kwargs={}, get_backend_from_cache=True):
         """
         Filters the given model or queryset using the given text, returning the
         modified queryset.
@@ -609,7 +614,10 @@ class SearchEngine(object):
         if not search_text:
             return queryset
         # Perform the backend-specific full text match.
-        backend = get_backend(backend_name=backend_name)
+        backend = get_backend(
+            backend_name=backend_name, backend_init_kwargs=backend_init_kwargs,
+            from_cache=get_backend_from_cache
+        )
         queryset = backend.do_filter(self._engine_slug, queryset, search_text)
         # Perform the backend-specific full-text ranking.
         if ranking:
@@ -626,13 +634,14 @@ default_search_engine = SearchEngine("default")
 _backends_cache = {}
 
 
-def get_backend(backend_name=None):
+def get_backend(backend_name=None, backend_init_kwargs={}, from_cache=True):
     """Initializes and returns the search backend."""
     global _backends_cache
     if not backend_name:
         backend_name = getattr(settings, "WATSON_BACKEND", "watson.backends.AdaptiveSearchBackend")
-    # Try to use the cached backend.
-    if backend_name in _backends_cache:
+    # Try to use the cached backend if from_cache loading is needed, otherwise
+    # reload the backend with appropriate backend_init_kwargs.
+    if backend_name in _backends_cache and from_cache:
         return _backends_cache[backend_name]
     # Load the backend class.
     backend_module_name, backend_cls_name = backend_name.rsplit(".", 1)
@@ -646,7 +655,7 @@ def get_backend(backend_name=None):
                 backend_cls_name=backend_cls_name,
             ))
     # Initialize the backend.
-    backend = backend_cls()
+    backend = backend_cls(backend_init_kwargs=backend_init_kwargs)
     _backends_cache[backend_name] = backend
     return backend
 
