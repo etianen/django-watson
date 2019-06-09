@@ -17,7 +17,7 @@ Features
 * Order results by relevance.
 * No need to install additional third-party modules or services.
 * Fast and scaleable enough for most use cases.
-* Supports Django 1.8+, Python 2.7+.
+* Supports Django 1.11+, Python 2.7+.
 
 
 Documentation

@@ -85,12 +85,6 @@ def main():
             "watson",
             "test_watson",
         ),
-        MIDDLEWARE_CLASSES=(
-            "django.middleware.common.CommonMiddleware",
-            "django.contrib.sessions.middleware.SessionMiddleware",
-            "django.contrib.auth.middleware.AuthenticationMiddleware",
-            "django.contrib.messages.middleware.MessageMiddleware",
-        ),
         MIDDLEWARE=(
             "django.middleware.common.CommonMiddleware",
             "django.contrib.sessions.middleware.SessionMiddleware",
@@ -103,17 +97,17 @@ def main():
         TEMPLATES=[{
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': ['templates'],
-            'OPTIONS': {'context_processors': ['django.contrib.auth.context_processors.auth']},
+            'OPTIONS': {'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ]},
             'APP_DIRS': True,
         }],
     )
 
-    # Run Django setup (1.7+).
+    # Run Django setup
     import django
-    try:
-        django.setup()
-    except AttributeError:
-        pass  # This is Django < 1.7
+    django.setup()
     # Configure the test runner.
     from django.test.utils import get_runner
     TestRunner = get_runner(settings)

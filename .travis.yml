@@ -1,6 +1,8 @@
 sudo: false
+dist: xenial
 language: python
 python:
+  - 3.7
   - 3.6
   - 3.5
   - 2.7
@@ -9,12 +11,9 @@ env:
   global:
     - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
   matrix:
+    - DJANGO='>=2.2,<2.3'
     - DJANGO='>=2.1,<2.2'
-    - DJANGO='>=2.0,<2.1'
     - DJANGO='>=1.11,<1.12'
-    - DJANGO='>=1.10,<1.11'
-    - DJANGO='>=1.9,<1.10'
-    - DJANGO='>=1.8,<1.9'
 matrix:
   fast_finish: true
   exclude:
@@ -22,6 +21,8 @@ matrix:
       env: DJANGO='>=2.0,<2.1'
     - python: 2.7
       env: DJANGO='>=2.1,<2.2'
+    - python: 2.7
+      env: DJANGO='>=2.2,<2.3'
 addons:
   apt:
     packages:
@@ -48,7 +49,7 @@ deploy:
     secure: rzaq3pbJz25SVXyR/fn+gLaYxu0LqCEE+wcesg8pjA8cLLvFdLvXi0ZjmixxVl2u4HlndZrUgwTrRGVIQR1TOL0jGRYOUCJDzAaZqJkg+Qykz89iKSnentyOpNJe6fRAHsqFxBESYZjG8JEZvtRv+JIZLY+QR+KCA1xaeu4Afpw=
   on:
     tags: true
-    condition: $DJANGO = '>=2.0,<2.1'
+    condition: $DJANGO = '>=2.2,<2.3'
     python: 3.6
     repo: etianen/django-watson
 notifications:
