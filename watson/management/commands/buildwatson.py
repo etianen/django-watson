@@ -17,7 +17,8 @@ from watson.models import SearchEntry
 
 
 # Sets up registration for django-watson's admin integration.
-admin.autodiscover()
+if apps.is_installed("django.contrib.admin"):
+    admin.autodiscover()
 
 
 def get_engine(engine_slug_):
