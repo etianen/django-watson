@@ -11,6 +11,7 @@ setup(
     author_email="dave@etianen.com",
     url="http://github.com/etianen/django-watson",
     zip_safe=False,
+    long_description_content_type="text/markdown",
     packages=[
         "watson",
         "watson.management",
