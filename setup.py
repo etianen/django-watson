@@ -1,5 +1,5 @@
 import os
-from distutils.core import setup
+from setuptools import setup
 from watson import __version__
 
 setup(
