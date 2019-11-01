@@ -17,8 +17,8 @@ from watson.models import SearchEntry, has_int_pk
 
 
 def regex_from_word(word):
-    """Generates a regext from the given search word."""
-    return "(\s{word})|(^{word})".format(
+    """Generates a regex from the given search word."""
+    return r"(\s{word})|(^{word})".format(
         word=re.escape(word),
     )
 
