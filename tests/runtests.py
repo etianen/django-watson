@@ -5,7 +5,12 @@ from optparse import OptionParser
 
 AVAILABLE_DATABASES = {
     'psql': {'ENGINE': 'django.db.backends.postgresql_psycopg2'},
-    'mysql': {'ENGINE': 'django.db.backends.mysql'},
+    'mysql': {
+        'ENGINE': 'django.db.backends.mysql',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
+        },
+    },
     'sqlite': {'ENGINE': 'django.db.backends.sqlite3'},
 }
 
@@ -103,7 +108,10 @@ def main():
         TEMPLATES=[{
             'BACKEND': 'django.template.backends.django.DjangoTemplates',
             'DIRS': ['templates'],
-            'OPTIONS': {'context_processors': ['django.contrib.auth.context_processors.auth']},
+            'OPTIONS': {'context_processors': [
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ]},
             'APP_DIRS': True,
         }],
     )
