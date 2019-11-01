@@ -1,5 +1,11 @@
 # django-watson changelog
 
+## 1.5.3 - 01/11/2019
+
+- Fixed `buildwatson` error when `django.contrib.admin` not installed (@krukas).
+- Bugfixes (@moggers87, @krukas).
+
+
 ## 1.5.2 - 23/02/2018
 
 - Django 2.0 compatibility improvements (@zandeez, @etianen).
