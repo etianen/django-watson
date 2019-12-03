@@ -6,7 +6,6 @@ import json
 
 from django.shortcuts import redirect
 from django.http import HttpResponse
-from django.utils import six
 from django.views import generic
 from django.views.generic.list import BaseListView
 
@@ -66,7 +65,7 @@ class SearchMixin(object):
         context = super(SearchMixin, self).get_context_data(**kwargs)
         context["query"] = self.query
         # Process extra context.
-        for key, value in six.iteritems(self.get_extra_context()):
+        for key, value in self.get_extra_context().items():
             if callable(value):
                 value = value()
             context[key] = value
