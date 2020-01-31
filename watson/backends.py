@@ -11,7 +11,6 @@ from django.db import transaction, connections, router
 from django.db.models import Q, FloatField
 from django.db.models.expressions import RawSQL, Value
 from django.utils.encoding import force_text
-from django.utils import six
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -43,7 +42,7 @@ def escape_query(text, re_escape_chars):
     return text
 
 
-class SearchBackend(six.with_metaclass(abc.ABCMeta)):
+class SearchBackend(metaclass=abc.ABCMeta):
     """Base class for all search backends."""
 
     def is_installed(self):
@@ -87,7 +86,7 @@ class SearchBackend(six.with_metaclass(abc.ABCMeta)):
         return connection.ops.quote_name(column_name)
 
 
-class RegexSearchMixin(six.with_metaclass(abc.ABCMeta)):
+class RegexSearchMixin(metaclass=abc.ABCMeta):
 
     """Mixin to adding regex search to a search backend."""
 

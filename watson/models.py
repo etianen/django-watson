@@ -6,7 +6,7 @@ import uuid
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import python_2_unicode_compatible, force_text
+from django.utils.encoding import force_text
 from django.utils.functional import cached_property
 
 try:
@@ -42,7 +42,6 @@ def get_str_pk(obj, connection):
 META_CACHE_KEY = "_meta_cache"
 
 
-@python_2_unicode_compatible
 class SearchEntry(models.Model):
 
     """An entry in the search index."""
