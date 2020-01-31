@@ -1,9 +1,8 @@
 import uuid
 from django.db import models
-from django.utils.encoding import force_text, python_2_unicode_compatible
+from django.utils.encoding import force_text
 
 
-@python_2_unicode_compatible
 class TestModelBase(models.Model):
     title = models.CharField(
         max_length=200,
