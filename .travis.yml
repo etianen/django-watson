@@ -8,8 +8,6 @@ cache: pip
 env:
   global:
     - PYTHONWARNINGS=default,ignore::PendingDeprecationWarning,ignore::ResourceWarning
-    - DJANGO_DATABASE_USER_POSTGRES=postgres
-    - DJANGO_DATABASE_USER_MYSQL=travis
   matrix:
     - DJANGO='>=3.0,<3.1'
     - DJANGO='>=2.2,<3.0'
