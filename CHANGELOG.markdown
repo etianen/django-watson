@@ -1,5 +1,12 @@
 # django-watson changelog
 
+## 1.5.4 - 05/02/2020
+
+- Django 3.0 tests and compatibility (@biozz, @ephes).
+- Removed Python 2.7 and 3.5 support (@biozz).
+- Removed Django 1.8, 1.9 and 1.10 support (@biozz).
+
+
 ## 1.5.3 - 01/11/2019
 
 - Fixed `buildwatson` error when `django.contrib.admin` not installed (@krukas).
