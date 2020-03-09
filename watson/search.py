@@ -366,7 +366,7 @@ class SearchEngine(object):
                     engine_slug=engine_slug,
                 )
             )
-        # Initialize thie engine.
+        # Initialize this engine.
         self._registered_models = {}
         self._engine_slug = engine_slug
         # Store the search context.
