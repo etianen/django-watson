@@ -7,7 +7,7 @@ from django.apps import apps
 from django.contrib import admin
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.translation import activate
 from django.conf import settings
 
@@ -26,7 +26,7 @@ def get_engine(engine_slug_):
     try:
         return [x[1] for x in SearchEngine.get_created_engines() if x[0] == engine_slug_][0]
     except IndexError:
-        raise CommandError("Search Engine \"%s\" is not registered!" % force_text(engine_slug_))
+        raise CommandError("Search Engine \"%s\" is not registered!" % force_str(engine_slug_))
 
 
 def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100, non_atomic_=False):
@@ -51,18 +51,18 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch
                 print(
                     "Refreshed search entry for {model} {obj} "
                     "in {engine_slug!r} search engine.".format(
-                        model=force_text(model_._meta.verbose_name),
-                        obj=force_text(obj),
-                        engine_slug=force_text(engine_slug_),
+                        model=force_str(model_._meta.verbose_name),
+                        obj=force_str(obj),
+                        engine_slug=force_str(engine_slug_),
                     )
                 )
         if verbosity_ == 2:
             print(
                 "Refreshed {local_refreshed_model_count} {model} search entry(s) "
                 "in {engine_slug!r} search engine.".format(
-                    model=force_text(model_._meta.verbose_name),
+                    model=force_str(model_._meta.verbose_name),
                     local_refreshed_model_count=local_refreshed_model_count[0],
-                    engine_slug=force_text(engine_slug_),
+                    engine_slug=force_str(engine_slug_),
                 )
             )
     if non_atomic_:
@@ -150,7 +150,7 @@ class Command(BaseCommand):
             if model is None or not search_engine.is_registered(model):
                 raise CommandError(
                     "Model \"%s\" is not registered with django-watson search engine \"%s\"!"
-                    % (force_text(model_name), force_text(engine_slug))
+                    % (force_str(model_name), force_str(engine_slug))
                 )
             models.append(model)
 
@@ -173,7 +173,7 @@ class Command(BaseCommand):
                 engine_slugs = [engine_slug]
                 if verbosity >= 2:
                     # let user know the search engine if they selected one
-                    print("Rebuilding models registered with search engine \"%s\"" % force_text(engine_slug))
+                    print("Rebuilding models registered with search engine \"%s\"" % force_str(engine_slug))
             else:  # loop through all engines
                 engine_slugs = [x[0] for x in SearchEngine.get_created_engines()]
 
@@ -206,7 +206,7 @@ class Command(BaseCommand):
                         "Deleted {stale_entry_count} stale search entry(s) "
                         "in {engine_slug!r} search engine.".format(
                             stale_entry_count=stale_entry_count,
-                            engine_slug=force_text(engine_slug),
+                            engine_slug=force_str(engine_slug),
                         )
                     )
 
@@ -215,6 +215,6 @@ class Command(BaseCommand):
                 "Refreshed {refreshed_model_count} search entry(s) "
                 "in {engine_slug!r} search engine.".format(
                     refreshed_model_count=refreshed_model_count,
-                    engine_slug=force_text(engine_slug),
+                    engine_slug=force_str(engine_slug),
                 )
             )

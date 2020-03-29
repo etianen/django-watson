@@ -17,7 +17,7 @@ from django.db.models import Q
 from django.db.models.expressions import RawSQL
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.html import strip_tags
 from django.core.serializers.json import DjangoJSONEncoder
 try:
@@ -86,11 +86,11 @@ class SearchAdapter(object):
         # Look up recursive fields.
         if len(name_parts) == 2:
             if isinstance(value, (QuerySet, models.Manager)):
-                return " ".join(force_text(self._resolve_field(obj, name_parts[1])) for obj in value.all())
+                return " ".join(force_str(self._resolve_field(obj, name_parts[1])) for obj in value.all())
             return self._resolve_field(value, name_parts[1])
         # Resolve querysets.
         if isinstance(value, (QuerySet, models.Manager)):
-            value = " ".join(force_text(related) for related in value.all())
+            value = " ".join(force_str(related) for related in value.all())
         # Resolution complete!
         return value
 
@@ -107,9 +107,9 @@ class SearchAdapter(object):
 
         You can access the title of the search entry as `entry.title` in your search results.
 
-        The default implementation returns `force_text(obj)` truncated to 1000 characters.
+        The default implementation returns `force_str(obj)` truncated to 1000 characters.
         """
-        return force_text(obj)[:1000]
+        return force_str(obj)[:1000]
 
     def get_description(self, obj):
         """
@@ -144,7 +144,7 @@ class SearchAdapter(object):
         field_names = (field_name for field_name in field_names if field_name not in self.exclude)
         # Create the text.
         return self.prepare_content(" ".join(
-            force_text(self._resolve_field(obj, field_name))
+            force_str(self._resolve_field(obj, field_name))
             for field_name in field_names
         ))
 

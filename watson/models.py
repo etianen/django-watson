@@ -6,7 +6,7 @@ import uuid
 
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.utils.functional import cached_property
 
 try:
@@ -36,7 +36,7 @@ def has_int_pk(model):
 
 
 def get_str_pk(obj, connection):
-    return obj.pk.hex if isinstance(obj.pk, uuid.UUID) and connection.vendor != "postgresql" else force_text(obj.pk)
+    return obj.pk.hex if isinstance(obj.pk, uuid.UUID) and connection.vendor != "postgresql" else force_str(obj.pk)
 
 
 META_CACHE_KEY = "_meta_cache"

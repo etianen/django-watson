@@ -10,7 +10,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db import transaction, connections, router
 from django.db.models import Q, FloatField
 from django.db.models.expressions import RawSQL, Value
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 from watson.models import SearchEntry, has_int_pk
 
@@ -35,7 +35,7 @@ def escape_query(text, re_escape_chars):
     normalizes the query text to a format that can be consumed
     by the backend database
     """
-    text = force_text(text)
+    text = force_str(text)
     text = RE_SPACE.sub(" ", text)  # Standardize spacing.
     text = re_escape_chars.sub(" ", text)  # Replace harmful characters with space.
     text = text.strip()
