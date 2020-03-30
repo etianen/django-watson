@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.5.5 - 30/03/2020
+
+- Fixed a number of deprecation warnings in Django 3.0. (@henrikhorluck).
+
+
 ## 1.5.4 - 05/02/2020
 
 - Django 3.0 tests and compatibility (@biozz, @ephes).
