@@ -22,7 +22,7 @@ from django.core.management import call_command
 from django.conf import settings
 from django.contrib.auth.models import User
 from django import template
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 from django.db.models import Case, When, Value, IntegerField
 
 from watson import search as watson
@@ -708,7 +708,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find everything.
         response = self.client.get("/simple/json/?q=title")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
-        results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
+        results = set(result["title"] for result in json.loads(force_str(response.content))["results"])
         self.assertEqual(len(results), 6)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)
@@ -753,7 +753,7 @@ class SiteSearchTest(SearchTestBase):
         # Test a search that should find everything.
         response = self.client.get("/custom/json/?fooo=title&page=last")
         self.assertEqual(response["Content-Type"], "application/json; charset=utf-8")
-        results = set(result["title"] for result in json.loads(force_text(response.content))["results"])
+        results = set(result["title"] for result in json.loads(force_str(response.content))["results"])
         self.assertEqual(len(results), 6)
         self.assertTrue("title model1 instance11" in results)
         self.assertTrue("title model1 instance12" in results)

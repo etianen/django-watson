@@ -1,6 +1,6 @@
 import uuid
 from django.db import models
-from django.utils.encoding import force_text
+from django.utils.encoding import force_str
 
 
 class TestModelBase(models.Model):
@@ -21,7 +21,7 @@ class TestModelBase(models.Model):
     )
 
     def __str__(self):
-        return force_text(self.title)
+        return force_str(self.title)
 
     class Meta:
         abstract = True
