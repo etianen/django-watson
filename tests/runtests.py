@@ -58,17 +58,20 @@ def main():
     # database settings
     if options.database:
         database_setting = AVAILABLE_DATABASES[options.database]
+        database_default_host = "127.0.0.1"
         if options.database == "sqlite":
             database_default_name = os.path.join(os.path.dirname(__file__), "db.sqlite3")
         else:
             database_default_name = "test_project"
         database_setting.update(dict(
             NAME=os.environ.get("DB_NAME", database_default_name),
+            HOST=os.environ.get("DB_HOST", database_default_host),
             USER=os.environ.get("DB_USER", ""),
             PASSWORD=os.environ.get("DB_PASSWORD", "")))
     else:
         database_setting = dict(
             ENGINE=os.environ.get("DB_ENGINE", 'django.db.backends.sqlite3'),
+            HOST=os.environ.get("DB_HOST", database_default_host),
             NAME=os.environ.get("DB_NAME", os.path.join(os.path.dirname(__file__), "db.sqlite3")),
             USER=os.environ.get("DB_USER", ""),
             PASSWORD=os.environ.get("DB_PASSWORD", ""))
@@ -114,6 +117,7 @@ def main():
             ]},
             'APP_DIRS': True,
         }],
+        SECRET_KEY="fake-key"
     )
 
     # Run Django setup (1.7+).
