@@ -259,6 +259,26 @@ class InternalsTest(SearchTestBase):
         # Make sure that we have six again (including duplicates).
         self.assertEqual(search_entries.all().count(), 6)
 
+    def testSliceQuerysetBuildWatson(self):
+        # Delete and re-add
+        deleted, _ = SearchEntry.objects.filter(engine_slug="default").delete()
+        self.assertEqual(deleted, 6)
+        call_command("buildwatson", verbosity=0, slice_queryset=True)
+        self.assertEqual(SearchEntry.objects.filter(engine_slug="default").count(), 6)
+
+    def testFixesDuplicateSliceQuerysetBuildWatson(self):
+        search_entries = SearchEntry.objects.filter(engine_slug="default")
+        # Duplicate a couple of search entries.
+        for search_entry in search_entries.all()[:2]:
+            search_entry.id = None
+            search_entry.save()
+        # Make sure that we have eight (including duplicates).
+        self.assertEqual(search_entries.all().count(), 8)
+        # Run the rebuild command.
+        call_command("buildwatson", verbosity=0, slice_queryset=True)
+        # Make sure that we have six again (including duplicates).
+        self.assertEqual(search_entries.all().count(), 6)
+
     def testEmptyFilterGivesAllResults(self):
         for model in (WatsonTestModel1, WatsonTestModel2, WatsonTestModel3):
             self.assertEqual(watson.filter(model, "").count(), 2)

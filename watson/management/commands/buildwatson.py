@@ -29,12 +29,24 @@ def get_engine(engine_slug_):
         raise CommandError("Search Engine \"%s\" is not registered!" % force_str(engine_slug_))
 
 
-def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100, non_atomic_=False):
+def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch_size_=100, non_atomic_=False, slice_queryset_=False):
     """rebuilds index for a model"""
 
     search_engine_ = get_engine(engine_slug_)
 
     local_refreshed_model_count = [0]  # HACK: Allows assignment to outer scope.
+
+    def report(obj):
+        local_refreshed_model_count[0] += 1
+        if verbosity_ >= 3:
+            print(
+                "Refreshed search entry for {model} {obj} "
+                "in {engine_slug!r} search engine.".format(
+                    model=force_str(model_._meta.verbose_name),
+                    obj=force_str(obj),
+                    engine_slug=force_str(engine_slug_),
+                )
+            )
 
     def iter_search_entries():
         # Only index specified objects if slim_ is True
@@ -43,19 +55,19 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch
         else:
             obj_list = model_._default_manager.all()
 
-        for obj in obj_list.iterator():
-            for search_entry in search_engine_._update_obj_index_iter(obj):
-                yield search_entry
-            local_refreshed_model_count[0] += 1
-            if verbosity_ >= 3:
-                print(
-                    "Refreshed search entry for {model} {obj} "
-                    "in {engine_slug!r} search engine.".format(
-                        model=force_str(model_._meta.verbose_name),
-                        obj=force_str(obj),
-                        engine_slug=force_str(engine_slug_),
-                    )
-                )
+        if slice_queryset_:
+            count = obj_list.count()
+            for i in range(0, count, batch_size_):
+                for obj in obj_list[i:i + batch_size_]:
+                    for search_entry in search_engine_._update_obj_index_iter(obj):
+                        yield search_entry
+                    report(obj)
+        else:
+            for obj in obj_list.iterator():
+                for search_entry in search_engine_._update_obj_index_iter(obj):
+                    yield search_entry
+                    report(obj)
+
         if verbosity_ == 2:
             print(
                 "Refreshed {local_refreshed_model_count} {model} search entry(s) "
@@ -107,6 +119,12 @@ class Command(BaseCommand):
             type=int,
             help="The batchsize with which entries will be added to the index."
         )
+        parser.add_argument(
+            '--slice-queryset',
+            action='store_true',
+            default=False,
+            help="Uses slicing on QuerySet instead of .iterator()"
+        )
 
     def handle(self, *args, **options):
         """Runs the management command."""
@@ -125,6 +143,7 @@ class Command(BaseCommand):
         slim = options.get("slim")
         batch_size = options.get("batch_size")
         non_atomic = options.get("non_atomic")
+        slice_queryset = options.get("slice_queryset")
 
         # work-around for legacy optparser hack in BaseCommand. In Django=1.10 the
         # args are collected in options['apps'], but in earlier versions they are
@@ -166,7 +185,8 @@ class Command(BaseCommand):
                     verbosity,
                     slim_=slim,
                     batch_size_=batch_size,
-                    non_atomic_=non_atomic)
+                    non_atomic_=non_atomic,
+                    slice_queryset_=slice_queryset)
 
         else:  # full rebuild (for one or all search engines)
             if engine_selected:
@@ -188,7 +208,8 @@ class Command(BaseCommand):
                         verbosity,
                         slim_=slim,
                         batch_size_=batch_size,
-                        non_atomic_=non_atomic)
+                        non_atomic_=non_atomic,
+                        slice_queryset_=slice_queryset)
 
                 # Clean out any search entries that exist for stale content types.
                 # Only do it during full rebuild
