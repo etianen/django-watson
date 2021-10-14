@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 import json
 import sys
-from itertools import chain, islice
+from itertools import islice
 from threading import local
 from functools import wraps
 from weakref import WeakValueDictionary
