@@ -256,11 +256,8 @@ class SearchContextManager(local):
         # Save all the models.
         tasks, is_invalid = self._stack.pop()
         if not is_invalid:
-            _bulk_save_search_entries(
-                list(chain.from_iterable(engine._update_obj_index_iter(obj)
-                                         for engine, obj in tasks)
-                     )
-            )
+            _bulk_save_search_entries([engine._update_obj_index_iter(obj)
+                                       for engine, obj in tasks])
 
     # Context management.
 
