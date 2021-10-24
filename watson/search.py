@@ -448,7 +448,7 @@ class SearchEngine(object):
         from django.contrib.contenttypes.models import ContentType
         from watson.models import SearchEntry, has_int_pk
         content_type = ContentType.objects.get_for_model(model)
-        # subquery to get entries which cannot be found in the original table
+        # subquery to get entries which cannot be found in the original table (when negated)
         lookup_subquery = models.Subquery(
             model.objects.all().values('pk')
         )
