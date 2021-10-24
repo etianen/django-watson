@@ -187,8 +187,8 @@ class InternalsTest(SearchTestBase):
         self.assertEqual(watson.search("fooo1").count(), 1)
         self.assertEqual(watson.search("fooo2").count(), 1)
         self.assertEqual(watson.search("fooo3").count(), 1)
-        # Use raw deletion query to remove record directly from the database (no signals triggered).
-        # This is so that the cleanup functionality of buildwatson can be tested
+        # Use raw deletion query to remove record directly from the database (i.e. no signals triggered).
+        # This is so that the cleanup functionality of buildwatson can be tested.
         with connection.cursor() as cursor:
             cursor.execute(
                 'DELETE FROM ' + WatsonTestModel1._meta.db_table + ' WHERE ' + WatsonTestModel1._meta.pk.name + ' = %s',
