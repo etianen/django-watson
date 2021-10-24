@@ -66,9 +66,11 @@ def rebuild_index_for_model(model_, engine_slug_, verbosity_, slim_=False, batch
                 )
             )
     if non_atomic_:
+        search_engine_.cleanup_model_index(model_)
         _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
     else:
         with transaction.atomic():
+            search_engine_.cleanup_model_index(model_)
             _bulk_save_search_entries(iter_search_entries(), batch_size=batch_size_)
     return local_refreshed_model_count[0]
 
