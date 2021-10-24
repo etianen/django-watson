@@ -15,7 +15,6 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import models, connections, router
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
-from django.db.models.functions import Coalesce
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_str
