@@ -15,7 +15,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import models, connections, router
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
-from django.db.models.functions import Coalesce
+from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_str
@@ -446,12 +446,13 @@ class SearchEngine(object):
     def _get_deleted_entries_for_model(self, model):
         """Returns a queryset of entries associated with deleted object instances of the given model"""
         from django.contrib.contenttypes.models import ContentType
-        from watson.models import SearchEntry
+        from watson.models import SearchEntry, has_int_pk
         content_type = ContentType.objects.get_for_model(model)
         id_output_field = type(model._meta.pk)
+        object_id_field = 'object_id_int' if has_int_pk(model) else 'object_id'
         return SearchEntry.objects.annotate(
-            # normalize the object id into a single field of the correct type
-            normalized_pk=Coalesce('object_id_int', 'object_id', output_field=id_output_field())
+            # normalize the object id into a field of the correct type for the original table
+            normalized_pk=Cast(object_id_field, id_output_field())
         ).filter(
             Q(content_type=content_type) &
             Q(engine_slug=self._engine_slug) &
