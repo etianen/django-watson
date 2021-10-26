@@ -24,6 +24,28 @@ except AttributeError:  # Django < 2.0.
     pass
 
 
+def get_pk_output_field(model):
+    """Gets an instance of the field type for the primary key of the given model, useful for database CAST."""
+    pk = model._meta.pk
+    field_cls = type(pk)
+    field_kwargs = {}
+    if isinstance(pk, models.CharField):
+        # Some versions of Django produce invalid SQL for the CAST function (in some databases)
+        # if CharField does not have max_length passed.
+        # Therefore, it is necessary to copy over the max_length of the original field to avoid errors.
+        # See: https://code.djangoproject.com/ticket/28371
+        field_kwargs['max_length'] = pk.max_length
+    elif isinstance(pk, models.AutoField):
+        # Some versions of Django appear to also produce invalid SQL in MySQL
+        # when attempting to CAST with AutoField types.
+        # This covers for that by instead casting to the corresponding integer type.
+        if isinstance(pk, models.BigAutoField):
+            field_cls = models.BigIntegerField
+        else:
+            field_cls = models.IntegerField
+    return field_cls(**field_kwargs)
+
+
 def has_int_pk(model):
     """Tests whether the given model has an integer primary key."""
     pk = model._meta.pk
