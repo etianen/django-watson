@@ -24,6 +24,7 @@ from django.contrib.auth.models import User
 from django import template
 from django.utils.encoding import force_str
 from django.db.models import Case, When, Value, IntegerField
+from django.db import connection
 
 from watson import search as watson
 from watson.models import SearchEntry
@@ -184,6 +185,19 @@ class InternalsTest(SearchTestBase):
         call_command("buildwatson", verbosity=0)
         # Test that the update is now applied.
         self.assertEqual(watson.search("fooo1").count(), 1)
+        self.assertEqual(watson.search("fooo2").count(), 1)
+        self.assertEqual(watson.search("fooo3").count(), 1)
+        # Use raw deletion query to remove record directly from the database (i.e. no signals triggered).
+        # This is so that the cleanup functionality of buildwatson can be tested.
+        with connection.cursor() as cursor:
+            cursor.execute(
+                'DELETE FROM ' + WatsonTestModel1._meta.db_table + ' WHERE ' + WatsonTestModel1._meta.pk.name + ' = %s',
+                [self.test11.id]
+            )
+        # Run the rebuild command again.
+        call_command("buildwatson", verbosity=0)
+        # Test that the deleted object is now gone, but the other objects can still be found.
+        self.assertEqual(watson.search("fooo1").count(), 0)
         self.assertEqual(watson.search("fooo2").count(), 1)
         self.assertEqual(watson.search("fooo3").count(), 1)
 

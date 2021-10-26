@@ -15,6 +15,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import models, connections, router
 from django.db.models import Q
 from django.db.models.expressions import RawSQL
+from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
 from django.db.models.signals import post_save, pre_delete
 from django.utils.encoding import force_str
@@ -442,6 +443,26 @@ class SearchEngine(object):
             model=model,
         ))
 
+    def _get_deleted_entries_for_model(self, model):
+        """Returns a queryset of entries associated with deleted object instances of the given model"""
+        from django.contrib.contenttypes.models import ContentType
+        from watson.models import SearchEntry, has_int_pk, get_pk_output_field
+        content_type = ContentType.objects.get_for_model(model)
+        object_id_field = 'object_id_int' if has_int_pk(model) else 'object_id'
+        return SearchEntry.objects.annotate(
+            # normalize the object id into a field of the correct type for the original table
+            normalized_pk=Cast(object_id_field, get_pk_output_field(model))
+        ).filter(
+            Q(content_type=content_type) &
+            Q(engine_slug=self._engine_slug) &
+            # subquery to get entries which cannot be found in the original table (when negated)
+            ~Q(
+                normalized_pk__in=models.Subquery(
+                    model.objects.all().values('pk')
+                )
+            )
+        )
+
     def _get_entries_for_obj(self, obj):
         """Returns a queryset of entries associate with the given obj."""
         from django.contrib.contenttypes.models import ContentType
@@ -500,6 +521,11 @@ class SearchEngine(object):
         elif update_count > 1:
             # Oh no! Somehow we've got duplicated search entries!
             search_entries.exclude(id=search_entries[0].id).delete()
+
+    def cleanup_model_index(self, model):
+        """Removes search index entries which map to deleted object instances for the given model"""
+        search_entries = self._get_deleted_entries_for_model(model)
+        search_entries.delete()
 
     def update_obj_index(self, obj):
         """Updates the search index for the given obj."""
