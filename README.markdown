@@ -1,7 +1,7 @@
 django-watson
 =============
 
-[![Build Status](https://travis-ci.org/etianen/django-watson.svg?branch=master)](https://travis-ci.org/etianen/django-watson)
+[![Django CI](https://github.com/etianen/django-watson/actions/workflows/django.yml/badge.svg)](https://github.com/etianen/django-watson/actions/workflows/django.yml)
 [![PyPI](https://img.shields.io/pypi/v/django-watson.svg)](https://pypi.python.org/pypi/django-watson)
 [![GitHub license](https://img.shields.io/badge/license-New%20BSD-blue.svg)](https://raw.githubusercontent.com/etianen/django-watson/master/LICENSE)
 
