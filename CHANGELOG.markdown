@@ -1,5 +1,12 @@
 # django-watson changelog
 
+## 1.6.0 - 03/11/2021
+
+- Remove deleted objects when rebuilding index using `buildwatson` (@CristopherH95).
+- Added Add AppConfig with default_auto_field set (@CristopherH95).
+- Migrated to GitHub actions from Travis CI (@Hopiu, @etianen, @amureki).
+
+
 ## 1.5.5 - 30/03/2020
 
 - Fixed a number of deprecation warnings in Django 3.0. (@henrikhorluck).
