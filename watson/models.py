@@ -5,6 +5,7 @@ from __future__ import unicode_literals
 import uuid
 
 from django.db import models
+from django.db.models.fields.related import RelatedField
 from django.contrib.contenttypes.models import ContentType
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
@@ -27,6 +28,8 @@ except AttributeError:  # Django < 2.0.
 def get_pk_output_field(model):
     """Gets an instance of the field type for the primary key of the given model, useful for database CAST."""
     pk = model._meta.pk
+    if isinstance(pk, RelatedField):
+        return get_pk_output_field(pk.remote_field.model)
     field_cls = type(pk)
     field_kwargs = {}
     if isinstance(pk, models.CharField):
