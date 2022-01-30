@@ -1,12 +1,11 @@
-from django.conf.urls import url, include
 from django.contrib import admin
-
+from django.urls import include, re_path
 
 urlpatterns = [
 
-    url("^simple/", include("watson.urls")),
+    re_path("^simple/", include("watson.urls")),
 
-    url("^custom/", include("watson.urls"), kwargs={
+    re_path("^custom/", include("watson.urls"), kwargs={
         "query_param": "fooo",
         "empty_query_redirect": "/simple/",
         "extra_context": {
@@ -16,5 +15,5 @@ urlpatterns = [
         "paginate_by": 10,
     }),
 
-    url("^admin/", admin.site.urls),
+    re_path("^admin/", admin.site.urls),
 ]

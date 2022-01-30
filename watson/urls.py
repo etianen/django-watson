@@ -2,14 +2,14 @@
 
 from __future__ import unicode_literals
 
-from django.conf.urls import url
+from django.urls import re_path
 
 from watson.views import search, search_json
 
 app_name = 'watson'
 urlpatterns = [
 
-    url("^$", search, name="search"),
-    url("^json/$", search_json, name="search_json"),
+    re_path("^$", search, name="search"),
+    re_path("^json/$", search_json, name="search_json"),
 
 ]
