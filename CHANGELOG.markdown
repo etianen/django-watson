@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.6.1 - 03/01/2021
+
+- Fix handling for `RelatedField` pk types (@CristopherH95).
+
+
 ## 1.6.0 - 03/11/2021
 
 - Remove deleted objects when rebuilding index using `buildwatson` (@CristopherH95).
