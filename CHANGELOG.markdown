@@ -1,6 +1,11 @@
 # django-watson changelog
 
-## 1.6.1 - 03/01/2021
+## 1.6.2 - 20/02/2022
+
+- Django 4.0 compatibility.
+
+
+## 1.6.1 - 03/01/2022
 
 - Fix handling for `RelatedField` pk types (@CristopherH95).
 
