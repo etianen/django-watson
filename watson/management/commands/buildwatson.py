@@ -99,7 +99,7 @@ class Command(BaseCommand):
             '--non-atomic',
             action='store_true',
             default=False,
-            help="Commit index entries in batches. WARNING: if buildwatson failse, \
+            help="Commit index entries in batches. WARNING: if buildwatson fails, \
             the index will be incomplete."
         )
         parser.add_argument(
