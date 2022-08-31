@@ -240,7 +240,7 @@ class SearchContextManager(local):
         objects.add((engine, obj))
 
     def invalidate(self):
-        """Marks this search context as broken, so should not be commited."""
+        """Marks this search context as broken, so should not be committed."""
         self._assert_active()
         objects, _ = self._stack[-1]
         self._stack[-1] = (objects, True)
