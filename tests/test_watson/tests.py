@@ -754,7 +754,7 @@ class SiteSearchTest(SearchTestBase):
             self.assertEqual(ex.args[0], "404.html")
         else:
             self.assertEqual(response.status_code, 404)
-        # Test a requet for the last page.
+        # Test a request for the last page.
         response = self.client.get("/custom/?fooo=title&page=last")
         self.assertEqual(response.context["paginator"].num_pages, 1)
         self.assertEqual(response.context["page_obj"].number, 1)
