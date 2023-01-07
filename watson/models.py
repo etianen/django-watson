@@ -84,7 +84,7 @@ class SearchEntry(models.Model):
 
     object_id = models.TextField(
         db_index=True,
-        max_length=255,
+        max_length=191,
     )
 
     object_id_int = models.IntegerField(
