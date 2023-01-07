@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='searchentry',
             name='object_id',
-            field=models.TextField(db_index=True, max_length=255),
+            field=models.TextField(max_length=255),
+        ),
+        migrations.AlterField(
+            model_name='searchentry',
+            name='object_id',
+            field=models.TextField(db_index=True),
         ),
     ]
