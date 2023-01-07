@@ -82,10 +82,7 @@ class SearchEntry(models.Model):
         on_delete=models.CASCADE,
     )
 
-    object_id = models.TextField(
-        db_index=True,
-        max_length=191,
-    )
+    object_id = models.TextField()
 
     object_id_int = models.IntegerField(
         blank=True,
