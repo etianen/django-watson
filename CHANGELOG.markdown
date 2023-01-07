@@ -1,5 +1,10 @@
 # django-watson changelog
 
+## 1.5.2 - 07/01/2023
+
+- Added index on `object_id` column to support faster non-integer primary key models (@syphar, @etianen).
+
+
 ## 1.6.2 - 20/02/2022
 
 - Django 4.0 compatibility.
