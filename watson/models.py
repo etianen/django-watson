@@ -60,6 +60,12 @@ def has_int_pk(model):
     )
 
 
+def has_uuid_pk(model):
+    """Tests whether the given model has an uuid primary key."""
+    pk = model._meta.pk
+    return isinstance(pk, models.UUIDField)
+
+
 def get_str_pk(obj, connection):
     return obj.pk.hex if isinstance(obj.pk, uuid.UUID) and connection.vendor != "postgresql" else force_str(obj.pk)
 
