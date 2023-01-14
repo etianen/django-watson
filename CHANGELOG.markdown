@@ -1,5 +1,12 @@
 # django-watson changelog
 
+## 1.6.2 - 14/01/2023
+
+- Optimized searching models with UUID primary keys (@thiagoferreiraw).
+- Optimized searching models with text primary keys (@syphar).
+- Documentation fixes (@timgates42, @danihodovic).
+
+
 ## 1.6.2 - 20/02/2022
 
 - Django 4.0 compatibility.
