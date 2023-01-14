@@ -12,7 +12,7 @@ from django.db.models import Q, FloatField
 from django.db.models.expressions import RawSQL, Value
 from django.utils.encoding import force_str
 
-from watson.models import SearchEntry, has_int_pk
+from watson.models import SearchEntry, has_int_pk, has_uuid_pk
 
 
 def regex_from_word(word):
@@ -282,10 +282,19 @@ class PostgresSearchBackend(SearchBackend):
         if has_int_pk(model):
             ref_name = "object_id_int"
             ref_name_typecast = ""
+            watson_id_typecast = ""
+        elif has_uuid_pk(model):
+            ref_name = "object_id"
+            # Moving the type cast happens on the watson_searchentry table.
+            # This ensures the primary key will be properly used.
+            ref_name_typecast = ""
+            watson_id_typecast = "::uuid"
         else:
             ref_name = "object_id"
-            # Cast to text to make join work with uuid columns
+            # Cast to text to make join work with other column types
             ref_name_typecast = "::text"
+            watson_id_typecast = ""
+
         return queryset.extra(
             tables=("watson_searchentry",),
             where=(
@@ -293,11 +302,13 @@ class PostgresSearchBackend(SearchBackend):
                 "watson_searchentry.search_tsv @@ to_tsquery('{search_config}', %s)".format(
                     search_config=self.search_config
                 ),
-                "watson_searchentry.{ref_name} = {table_name}.{pk_name}{ref_name_typecast}".format(
+                "watson_searchentry.{ref_name}{watson_id_typecast} = {table_name}.{pk_name}{ref_name_typecast}".format(
+
                     ref_name=ref_name,
                     table_name=connection.ops.quote_name(model._meta.db_table),
                     pk_name=connection.ops.quote_name(pk.db_column or pk.attname),
-                    ref_name_typecast=ref_name_typecast
+                    ref_name_typecast=ref_name_typecast,
+                    watson_id_typecast=watson_id_typecast
                 ),
                 "watson_searchentry.content_type_id = %s"
             ),
