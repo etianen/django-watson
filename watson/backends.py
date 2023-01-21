@@ -24,8 +24,8 @@ def regex_from_word(word):
 
 # PostgreSQL to_tsquery operators: ! & : ( ) |
 RE_POSTGRES_ESCAPE_CHARS = re.compile(r'[&:(|)!><]', re.UNICODE)
-# MySQL boolean full-text search operators: > < ( ) " ~ * + -
-RE_MYSQL_ESCAPE_CHARS = re.compile(r'["()><~*+-]', re.UNICODE)
+# MySQL boolean full-text search operators: > < ( ) " ~ * + - @
+RE_MYSQL_ESCAPE_CHARS = re.compile(r'["()><~*+-@]', re.UNICODE)
 
 RE_SPACE = re.compile(r"[\s]+", re.UNICODE)
 
