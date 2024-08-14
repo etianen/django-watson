@@ -13,7 +13,7 @@ from django.conf import settings
 from django.core.signals import request_finished
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.db import models, connections, router
-from django.db.models import Q
+from django.db.models import Q, TextField
 from django.db.models.expressions import RawSQL
 from django.db.models.functions import Cast
 from django.db.models.query import QuerySet
@@ -565,10 +565,7 @@ class SearchEngine(object):
                     )
                 else:
                     queryset = queryset.annotate(
-                        watson_pk_str=RawSQL(backend.do_string_cast(
-                            connections[queryset.db],
-                            model._meta.pk.db_column or model._meta.pk.attname,
-                        ), ()),
+                        watson_pk_str=Cast('pk', TextField())
                     ).values_list("watson_pk_str", flat=True)
                     filter &= Q(
                         object_id__in=queryset,
