@@ -175,6 +175,13 @@ class PostgresSearchBackend(SearchBackend):
     search_config = getattr(settings, "WATSON_POSTGRES_SEARCH_CONFIG", "pg_catalog.english")
     """Text search configuration to use in `to_tsvector` and `to_tsquery` functions"""
 
+    # Configurable truncation limits to prevent PostgreSQL tsvector size limit (1,048,575 bytes)
+    # These settings control how much text from each field is indexed:
+    # - WATSON_POSTGRES_TITLE_LIMIT: Max characters for title field (default: 10,000)
+    # - WATSON_POSTGRES_DESCRIPTION_LIMIT: Max characters for description field (default: 100,000)
+    # - WATSON_POSTGRES_CONTENT_LIMIT: Max characters for content field (default: 890,000)
+    # Total should stay well under 1MB to account for tsvector processing overhead
+
     def escape_postgres_query(self, text):
         """Escapes the given text to become a valid ts_query."""
         return " & ".join(
@@ -199,6 +206,11 @@ class PostgresSearchBackend(SearchBackend):
         """Executes the PostgreSQL specific SQL code to install django-watson."""
         connection = connections[router.db_for_write(SearchEntry)]
 
+        # Get configurable truncation limits from Django settings
+        title_limit = getattr(settings, 'WATSON_POSTGRES_TITLE_LIMIT', 10000)
+        description_limit = getattr(settings, 'WATSON_POSTGRES_DESCRIPTION_LIMIT', 100000)
+        content_limit = getattr(settings, 'WATSON_POSTGRES_CONTENT_LIMIT', 890000)
+
         connection.cursor().execute("""
             -- Ensure that plpgsql is installed.
             CREATE OR REPLACE FUNCTION make_plpgsql() RETURNS VOID LANGUAGE SQL AS
@@ -220,20 +232,26 @@ class PostgresSearchBackend(SearchBackend):
             ALTER TABLE watson_searchentry ADD COLUMN search_tsv tsvector NOT NULL;
             CREATE INDEX watson_searchentry_search_tsv ON watson_searchentry USING gin(search_tsv);
 
-            -- Create the trigger function.
+            -- Create the trigger function with content truncation to prevent tsvector size limits.
             CREATE OR REPLACE FUNCTION watson_searchentry_trigger_handler() RETURNS trigger AS $$
             begin
+                -- Truncate content fields to prevent tsvector size limit issues
+                -- PostgreSQL tsvector has a limit of 1,048,575 bytes
+                -- Limits are configurable via Django settings
                 new.search_tsv :=
-                    setweight(to_tsvector('{search_config}', coalesce(new.title, '')), 'A') ||
-                    setweight(to_tsvector('{search_config}', coalesce(new.description, '')), 'C') ||
-                    setweight(to_tsvector('{search_config}', coalesce(new.content, '')), 'D');
+                    setweight(to_tsvector('{search_config}', coalesce(left(new.title, {title_limit}), '')), 'A') ||
+                    setweight(to_tsvector('{search_config}', coalesce(left(new.description, {description_limit}), '')), 'C') ||
+                    setweight(to_tsvector('{search_config}', coalesce(left(new.content, {content_limit}), '')), 'D');
                 return new;
             end
             $$ LANGUAGE plpgsql;
             CREATE TRIGGER watson_searchentry_trigger BEFORE INSERT OR UPDATE
             ON watson_searchentry FOR EACH ROW EXECUTE PROCEDURE watson_searchentry_trigger_handler();
         """.format(
-            search_config=self.search_config
+            search_config=self.search_config,
+            title_limit=title_limit,
+            description_limit=description_limit,
+            content_limit=content_limit
         ))
 
     @transaction.atomic()

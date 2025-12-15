@@ -778,3 +778,57 @@ class SiteSearchTest(SearchTestBase):
         # Test a search with an invalid page.
         response = self.client.get("/custom/json/?fooo=title&page=200")
         self.assertEqual(response.status_code, 404)
+
+
+class LargeContentTest(SearchTestBase):
+    """Test handling of large content that could exceed PostgreSQL tsvector limits."""
+
+    def testLargeContentTruncation(self):
+        """Test that large content is properly truncated to prevent tsvector size limit errors."""
+        # Create content larger than 1MB
+        large_content = "A" * 1200000  # 1.2MB of content
+        large_title = "B" * 150000     # 150KB title
+        large_description = "C" * 250000  # 250KB description
+
+        # Create a test object with large content
+        obj1 = WatsonTestModel1.objects.create(
+            title=large_title,
+            content=large_content,
+            description=large_description,
+        )
+
+        # Test that the search entry was created successfully without errors
+        search_entries = SearchEntry.objects.filter(
+            object_id=str(obj1.pk),
+            content_type=self.content_type1,
+        )
+        self.assertEqual(search_entries.count(), 1)
+
+        entry = search_entries[0]
+
+        # Verify that content was truncated appropriately
+        self.assertLessEqual(len(entry.title.encode('utf-8')), 100000)
+        self.assertLessEqual(len(entry.description.encode('utf-8')), 200000)
+        self.assertLessEqual(len(entry.content.encode('utf-8')), 700000)
+
+        # Verify that the content is still searchable
+        results = watson.search("AAA")  # Search for part of the large content
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].object, obj1)
+
+    def testPrepareContentNoTruncation(self):
+        """Test that the prepare_content method does not truncate (truncation is handled by PostgreSQL trigger)."""
+        adapter = watson.SearchAdapter(WatsonTestModel1)
+
+        # Test with large content - should NOT be truncated in Python
+        large_content = "Test content " * 100000  # Much larger than 1MB
+        result = adapter.prepare_content(large_content)
+
+        # Should NOT be truncated in Python (PostgreSQL trigger handles this)
+        self.assertEqual(len(result), len(large_content))
+        self.assertEqual(result, large_content)
+
+        # Test with normal-sized content
+        normal_content = "This is normal content"
+        result = adapter.prepare_content(normal_content)
+        self.assertEqual(result, normal_content)

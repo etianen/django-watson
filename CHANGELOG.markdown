@@ -1,5 +1,19 @@
 # django-watson changelog
 
+## 1.x.y - dd/mm/202z
+
+- **BREAKING**: Fixed PostgreSQL tsvector size limit errors by adding configurable field truncation.
+- Added new Django settings to control PostgreSQL search field limits:
+  - `WATSON_POSTGRES_TITLE_LIMIT` (default: 10,000 chars)
+  - `WATSON_POSTGRES_DESCRIPTION_LIMIT` (default: 100,000 chars)
+  - `WATSON_POSTGRES_CONTENT_LIMIT` (default: 890,000 chars)
+
+**Upgrade Instructions:**
+1. Run `python manage.py uninstallwatson`
+2. Run `python manage.py installwatson` (updates PostgreSQL trigger function)
+3. Run `python manage.py buildwatson` (rebuilds search index)
+4. Optionally configure field limits in settings.py if defaults don't suit your needs
+
 ## 1.6.2 - 14/01/2023
 
 - Optimized searching models with UUID primary keys (@thiagoferreiraw).
