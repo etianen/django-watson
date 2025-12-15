@@ -99,6 +99,7 @@ class SearchAdapter(object):
         """Sanitizes the given content string for better parsing by the search engine."""
         # Strip out HTML tags.
         content = strip_tags(content)
+        # Content truncation is handled by the PostgreSQL trigger function
         return content
 
     def get_title(self, obj):
@@ -498,6 +499,7 @@ class SearchEngine(object):
         content_type = ContentType.objects.get_for_model(model)
         object_id = get_str_pk(obj, connections[router.db_for_write(ContentType)])
         # Create the search entry data.
+        # Content truncation is handled by the PostgreSQL trigger function
         search_entry_data = {
             "engine_slug": self._engine_slug,
             "title": adapter.get_title(obj),
